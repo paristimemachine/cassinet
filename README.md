@@ -42,9 +42,12 @@ Le menu gauche présente différents paramètres :
 # Interactions avec la carte
 
 Lorsqu'un calcul de plus court chemin est réalisé, une trace bleue d'affiche sur la carte et matérialiser le plus court chemin.
+
 Attention, il arrive régulièrement que l'application ne renvoie rien, il peut s'agir d'un problème lié aux données. En effet, toutes les parties du réseau ne sont pas toujours routables.
+
 En passant la souris ou en cliquant sur le chemin, une fenêtre de popup apparait et présente des informations relatives à la distance parcourue et au temps (relatif à la vitesse sélectionnée dans les paramètres).
 De plus, l'interface présente également un graphique d'élévation calculé à partir des points prélevés le long du chemin.
+
 En bas de la popup, il est possible d'exporter la trace du plus court chemin au format geojson afin de pouvoir l'exploiter dans un outil SIG (Qgis par exemple ;)
 
 # Onglet analyses
