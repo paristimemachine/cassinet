@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@gouvfr/dsfr": "^1.11.2",
+    "leaflet-control-geocoder": "^2.4.0"
+  }
+}

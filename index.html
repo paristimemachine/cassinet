@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- EM : code UI/UX partiellement généré par chatgpt4 / makereal - le 1/05/2024 -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cassi[net]</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+          crossorigin=""/>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+
+    <script src="https://unpkg.com/leaflet.vectorgrid@latest/dist/Leaflet.VectorGrid.bundled.js"></script>
+
+    <link rel="stylesheet" href="node_modules/leaflet-control-geocoder/dist/Control.Geocoder.css" />
+    <script src="node_modules/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+
+    <!-- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> -->
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Turf.js/6.5.0/turf.min.js"></script>
+
+
+    <link rel="stylesheet" href="css/style.css"/>
+
+    <style>
+      body {
+        font-family: 'Open Sans', sans-serif;
+      }
+    </style>
+  </head>
+
+  <body class="bg-gray-100">
+
+    <div class="flex h-screen">
+      <!-- Sidebar -->
+      <div id="sidebar" class="bg-white w-64 border-r border-gray-200 p-4 flex flex-col">
+        <div class="mb-4 flex flex-col items-center">
+          <div>
+            <img src="img/cassinet-logo-white.webp" onclick="reload()" style="width: 180px; justify-content: center;"></img>
+          </div>
+          <button id="infoBtn" class="mt-1 p-1 bg-gray-200 rounded-full hover:bg-gray-300 focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9 6a1 1 0 012 0v5a1 1 0 01-2 0V6zM10 15a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- <h1 class="text-2xl font-semibold mb-4">Cassi[Net]</h1> -->
+
+        <div class="mb-4" style="overflow-y: auto;">
+          <div class="mb-4" id="div-calc-iti">
+          <b>Calcul d'itinéraire(s)</b>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input type="radio" class="form-radio" id="calculRouteMarche" name="option" value="walk">
+              <!-- <span class="ml-2">à pied</span> -->
+              <img src="img/pedestrian_icon.webp" alt="Piéton" class="w-10 h-10" style="margin-left: 8px;">
+            </label>
+            <label class="inline-flex items-center ml-6">
+              <input type="radio" class="form-radio" id="calculRouteCheval" name="option" value="horse" checked>
+              <!-- <span class="ml-2">à cheval</span> -->
+              <img src="img/horse_icon.webp" alt="Cavalier" class="w-10 h-10" style="margin-left: 8px;">
+          </div>
+          <div class="mb-4" >
+            <input id="inputStart" class="border border-gray-300 p-2 w-full" placeholder="Départ - Cliquer sur la carte">
+          </div>
+          <div class="mb-4" >
+            <input id="inputEnd" class="border border-gray-300 p-2 w-full" placeholder="Arrivée - Cliquer sur la carte">
+          </div>
+          <button id="searchButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full" onclick="compute()">
+            Calcul
+          </button>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input type="radio" class="form-radio" id="radioBtnNouveau" name="computeOpion" checked>
+              <span class="ml-2" style="font-size: 14px;">Nouveau</span>
+            </label>
+            <label class="inline-flex items-center ml-6">
+              <input type="radio" class="form-radio" id="radioBtnCumulatif" name="computeOpion">
+              <span class="ml-2" style="font-size: 14px;">Cumulatif</span>
+            </label>
+          </div>
+          <div class="mb-4" id="tempsParcours" style="display: none;">Temps de parcours : </div>
+        </div>
+
+        <div class="mb-4" id="div-calc-iso">
+          <b>Calcul d'isochrones (cheval)</b>
+          <div class="mb-4" >
+            <input id="isochroneStart" class="border border-gray-300 p-2 w-full" placeholder="Départ - Cliquer sur la carte">
+            <div class="mb-4" >
+              Pas isochrones (jours)
+              <input id="stepsIsochrone" class="border border-gray-300 p-2 w-full" placeholder="1, 2, 3" value="1, 2, 3">
+            </div>
+          </div>
+          <button id="searchButton" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded w-full disabled" onclick="computeIsochrone()">
+            Calcul
+          </button>
+          <div class="mb-4">
+            <label class="inline-flex items-center">
+              <input type="radio" class="form-radio" id="radioBtnISoNouveau" name="computeOptionIso" checked>
+              <span class="ml-2" style="font-size: 14px;">Nouveau</span>
+            </label>
+            <label class="inline-flex items-center ml-6">
+              <input type="radio" class="form-radio" id="radioBtnIsoCumulatif" name="computeOptionIso">
+              <span class="ml-2" style="font-size: 14px;">Cumulatif</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-4" id="div-param">
+          <b>Paramètres</b>
+          <button id="toggleParams" class="ml-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded">Déployer</button>
+          <div id="paramsContent" style="display: none;">
+            <div class="mb-4">
+              Vitesse à pied (km/j)
+              <input id="footspeed" class="border border-gray-300 p-2 w-full" value="24" placeholder="24 km/j">
+            </div>
+            <div class="mb-4">
+              Vitesse à cheval (km/j)
+              <input id="horsespeed" class="border border-gray-300 p-2 w-full" value="48" placeholder="48 km/j">
+            </div>
+            <div class="mb-4">
+              Rayon contrainte (km)
+              <input id="contrainte" class="border border-gray-300 p-2 w-full" value="10">
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-4" id="mesure" style="display: none;">Mesure : </div>
+
+      </div>
+    </div>
+
+    <div id="mapContainer" class="flex-1 relative">
+      <div id="map"></div>
+
+      </div>
+    </div>
+
+    <div id="analysisPanel" class="fixed right-0 top-0 h-full bg-white w-80 border-l border-gray-200 p-4 transform translate-x-full transition-transform duration-300">
+      <h2 class="text-xl font-semibold mb-4">Chemins et isochrones calculés</h2>
+      <div id="analysisCards" class="space-y-4">
+      </div>
+    </div>
+    
+    <button id="togglePanelButton" class="fixed bottom-1 right-0 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-l">Analyses</button>
+
+    <div id="myModal" class="modal">
+      <div class="modal-content">
+        <span class="close" onclick="closeModal()">&times;</span>
+        <h2>Signaler un problème sur la carte (connectivité, problème de calcul d'itinéraire, etc.)</h2>
+        <br>
+        <p>Décrivez le problème :</p>
+        <textarea id="problemDescription" rows="4" cols="50"></textarea>
+        <br>
+        <h3>Coordonnées de contact</h3>
+        <div>
+            <label for="contactNom">Nom:</label>
+            <input type="text" id="contactNom" name="contactNom" required>
+        </div>
+        <div>
+            <label for="contactInstitution">Institution:</label>
+            <input type="text" id="contactInstitution" name="contactInstitution">
+        </div>
+        <div>
+            <label for="contactMail">Mail:</label>
+            <input type="email" id="contactMail" name="contactMail" required>
+        </div>
+        <br>
+        <button onclick="submitProblem()">Soumettre</button>
+    </div>
+    </div>
+
+    <div id="modal" class="fixed inset-0 flex items-center justify-center z-500 hidden">
+      <div class="fixed inset-0 bg-gray-800 opacity-50"></div>
+    
+      <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white p-8 rounded-lg z-50">
+        <h2 class="text-lg font-bold mb-4">Informations sur l'application CassiNet</h2>
+        <p><b>Data : </b> 
+        <p>Réseau Cassini et Tâches urbaines : EHESS / LaDéhis [<a style="color:blue" href="https://www.nature.com/articles/sdata201548">publication</a> - <a style="color:blue" href="https://github.com/julienperret/cassini-topology">opendata</a>]</p>
+        <p>Altimétrie : IGN <a style="color:blue" href="https://geoservices.ign.fr/documentation/services/services-deprecies/calcul-altimetrique-rest">API altimétrie</a></p> 
+        <br>
+        <p>Base de données & calculs : Postgres 14.11 / Postgis 3.2.0 / Pgrouting 3.3</p>
+        <br>
+        <p>Code par Éric Mermet (CNRS / Huma-Num / <a style="color:blue" href="http://ptm.huma-num.fr/">Projet Time Machine</a>)</p>
+
+        <button id="closeModalBtn" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:outline-none">Fermer</button>
+      </div>
+    </div>
+
+  <footer class="footer">
+    <p>Made with
+        <svg class="heart-icon" aria-hidden="true" focusable="false" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+            <path fill="currentColor" d="M462.3 62.6C407.5 15.9 326 24.3 275.7 76.2L256 96.5l-19.7-20.3C186.1 24.3 104.5 15.9 49.7 62.6c-62.8 53.6-66.1 149.8-9.9 207.9l193.5 199.8c12.5 12.9 32.8 12.9 45.3 0l193.5-199.8c56.3-58.1 53-154.3-9.8-207.9z">
+            </path>
+        </svg>
+       by <a href="https://ptm.huma-num.fr/" target="_blank">PTM</a>
+       &nbsp;— <a href="https://doc.ptm.huma-num.fr/cassinet/" target="_blank">Documentation</a>
+    </p>
+  </footer>
+
+  <script src="js/interactions.js"></script>
+  <script src="js/compute.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/analysis.js"></script>
+  <script src="js/submission.js"></script>
+
+    <!-- Matomo -->
+  <script>
+    var _paq = window._paq = window._paq || [];
+    /* tracker methods like "setCustomDimension" should be called before "trackPageView" */
+    _paq.push(['trackPageView']);
+    _paq.push(['enableLinkTracking']);
+    (function() {
+      var u="//ptm.huma-num.fr/matomo/";
+      _paq.push(['setTrackerUrl', u+'matomo.php']);
+      _paq.push(['setSiteId', '21']);
+      var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+      g.async=true; g.src=u+'matomo.js'; s.parentNode.insertBefore(g,s);
+    })();
+  </script>
+  <!-- End Matomo Code -->
+
+  </body>
+</html>
