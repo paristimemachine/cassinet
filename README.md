@@ -58,3 +58,9 @@ Dès qu'un calcul (plus court chemin ou isochrone) est réalisé, des boites app
 - pour les plus courts chemins : le nom du chemin, la distance et le temps ainsi que le grpahique d'élévation.
 - pour les isochrones : les coordonnées lat/long du point de départ de l'isochrones ainsi qu'un graphique présentant 3 indicateurs sur les polygones à chacun des pas des isochrones : surface / périmètre / indice de circularité de Gravelius.
 
+# Signalement
+
+Les données historiques étant issus de sources qui sont interprétés par des opérateurs de saisie ne sont pas parfaites. Il arrive régulièrement qu'une interrogation sur un calcul de plus court chemin ne donne rien.
+IL est alors possible, si toutefois cela provient d'un problème relatif au réseau (composante connexe, segment manquants, problème de topologie, etc.) de signaler cette erreur.
+Cette option est possible en réalisant un clic droit sur la carte où un petit bouton signalement permet d'ouvrir une fenêtre à compléter : nom, prénom, mail institution, descriptif. Le signament est alors fait au point cliqué sur la carte.
+Nous prendrons alors les mesures nécessaires pour réaliser des corrections sur la base afin que celle-ci soit enrichie peu à peu des contributions des utilisateurs menant alors à un nouveau dépôt du réseau viaire des Cartes de Cassini.
