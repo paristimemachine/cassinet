@@ -226,6 +226,11 @@ map.on('baselayerchange', function(event) {
 //unpkg broked
 L.Control.geocoder().addTo(map);
 
+var loadingControl = L.Control.loading({
+  separate: true
+});
+map.addControl(loadingControl);
+
 map.on('click', async function(e) {
   let latlng = e.latlng;
   lat = latlng.lat;

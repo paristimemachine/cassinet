@@ -28,6 +28,10 @@ async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, c
     // console.log(url)
     
     try{
+
+        //waiting animation on map
+        map.fire('dataloading');
+
         const response = await fetch(url);
         const data = await response.json();
 
@@ -46,6 +50,8 @@ async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, c
 
         ajouterCarteAnalyse('Itinéraire '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
 
+        map.fire('dataload');
+
     }catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
     }
@@ -57,6 +63,10 @@ async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coor
     const url = 'https://api.ptm.huma-num.fr/cassinet/search/route-contrainte/?coordx_depart='+coordx_depart+'&coordy_depart='+coordy_depart+'&coordx_arrivee='+coordx_arrivee+'&coordy_arrivee='+coordy_arrivee+'&coordx_constraint='+coordx_constraint+'&coordy_constraint='+coordy_constraint+'&radius='+radius
         
     try{
+
+        //waiting animation on map
+        map.fire('dataloading');
+
         const response = await fetch(url);
         const data = await response.json();
 
@@ -77,6 +87,8 @@ async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coor
         afficherTempsParcours(data.temps_total);
 
         ajouterCarteAnalyse('Itinéraire (contraint) '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
+
+        map.fire('dataload');
 
     }catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
@@ -268,11 +280,16 @@ function computeIsochrone() {
 }
 
 async function fetchIsochrone(coordx_depart, coordy_depart, steps) {
+
     const urls = steps.map(step => 
         `https://api.ptm.huma-num.fr/cassinet/isochrone/?longitude=${coordx_depart}&latitude=${coordy_depart}&distance=${step}`
     );
 
     try {
+
+        //waiting animation on map
+        map.fire('dataloading');
+
         const responses = await Promise.all(urls.map(url => fetch(url)));
         const allData = await Promise.all(responses.map(response => response.json()));
 
@@ -286,6 +303,9 @@ async function fetchIsochrone(coordx_depart, coordy_depart, steps) {
             sameIsochrone = true;
         }
         ajouterCarteAnalyseIsochrone('Isochrone ['+coordx_depart+','+coordy_depart+']', allIndicators);
+
+        map.fire('dataload');
+        
     } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
     }
