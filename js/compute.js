@@ -80,21 +80,29 @@ async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coor
 
         // Get all geom from route
         let coordinates = [];
-        data.features.forEach(feature => {
-            feature.geometry.coordinates.forEach(coord => {
-                coordinates.push(coord.join(','));
+        if (data.features) {
+            data.features.forEach(feature => {
+                feature.geometry.coordinates.forEach(coord => {
+                    coordinates.push(coord.join(','));
+                });
             });
-        });
 
-        // call api for elevation data / IGN
-        const elevationData = await fetchElevationData(coordinates);
+            // call api for elevation data / IGN
+            const elevationData = await fetchElevationData(coordinates);
 
-        ajouterGeoJSON(data, elevationData);
+            ajouterGeoJSON(data, elevationData);
 
-        // Display time for route
-        afficherTempsParcours(data.temps_total);
+            // Display time for route
+            afficherTempsParcours(data.temps_total);
 
-        ajouterCarteAnalyse('Itinéraire (contraint) '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
+            ajouterCarteAnalyse('Itinéraire (contraint) '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
+
+            map.fire('dataload');
+
+        }else{
+            console.log("pas de chemin existante");
+            alert("Le calcul ne renvoie pas de résultat. Il peut s'agir d'un problème lié au réseau. Pensez à faire un signalement si vous identifiez un problème sur les données")
+        }
 
         map.fire('dataload');
 
