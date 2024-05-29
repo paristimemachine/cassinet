@@ -36,11 +36,14 @@ async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, c
         const data = await response.json();
 
         let coordinates = [];
-        data.features.forEach(feature => {
-            feature.geometry.coordinates.forEach(coord => {
-                coordinates.push(coord.join(','));
+        
+        if (data.features) {
+            data.features.forEach(feature => {
+                feature.geometry.coordinates.forEach(coord => {
+                    coordinates.push(coord.join(','));
+                });
             });
-        });
+       
 
         const elevationData = await fetchElevationData(coordinates);
 
@@ -49,6 +52,11 @@ async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, c
         afficherTempsParcours(data.temps_total);
 
         ajouterCarteAnalyse('Itinéraire '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
+
+        }else{
+            console.log("pas de chemin existante");
+            alert("Le calcul ne renvoie pas de résultat. Il peut s'agir d'un problème lié au réseau. Pensez à faire un signalement si vous identifiez un problème sur les données")
+        }
 
         map.fire('dataload');
 
@@ -305,7 +313,7 @@ async function fetchIsochrone(coordx_depart, coordy_depart, steps) {
         ajouterCarteAnalyseIsochrone('Isochrone ['+coordx_depart+','+coordy_depart+']', allIndicators);
 
         map.fire('dataload');
-        
+
     } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
     }

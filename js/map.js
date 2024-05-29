@@ -248,17 +248,20 @@ map.on('click', async function(e) {
 
   let tacheUrbaineProche = data[0]['nom'];
 
+  //bug when toponym contain ticks like Pont l'abbé
+  let tacheUrbaineProcheEscaped = tacheUrbaineProche.replace(/'/g, "\\'");
+
   // Main pop up on map 
   let popupContent = `
-      <div><h1><b>Tâche urbaine la plus proche :<br> ${tacheUrbaineProche} à ${data[0]['distance'].toFixed(1)} (m)</b></h1><br>
-      <h3><b>${coordsText}</b></h3></div>
-      <br>
-      <button id='buttonModalStart' onclick="setCoords('depart', ${lat}, ${lng}, '${tacheUrbaineProche}')">Définir comme départ</button>
-      <button id='buttonModalEnd' onclick="setCoords('arrivee', ${lat}, ${lng}, '${tacheUrbaineProche}')">Définir comme arrivée</button>
-      <button id='buttonModalIsochrone' onclick="setCoords('departisochrone', ${lat}, ${lng}, '${tacheUrbaineProche}')">Centre Isochrone</button>
-      <button id='buttonModalConstraints' onclick="setCoords('zoneconstraint', ${lat}, ${lng}, '${tacheUrbaineProche}')">Contrainte</button>
-      <button id='buttonModalReporting' onclick="setCoords('reporting', ${lat}, ${lng}, '${tacheUrbaineProche}')">Signaler une erreur</button>
-  `;
+    <div><h1><b>Tâche urbaine la plus proche :<br> ${tacheUrbaineProcheEscaped} à ${data[0]['distance'].toFixed(1)} (m)</b></h1><br>
+    <h3><b>${coordsText}</b></h3></div>
+    <br>
+    <button id="buttonModalStart" onclick="setCoords('depart', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Définir comme départ</button>
+    <button id="buttonModalEnd" onclick="setCoords('arrivee', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Définir comme arrivée</button>
+    <button id="buttonModalIsochrone" onclick="setCoords('departisochrone', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Centre Isochrone</button>
+    <button id="buttonModalConstraints" onclick="setCoords('zoneconstraint', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Contrainte</button>
+    <button id="buttonModalReporting" onclick="setCoords('reporting', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Signaler une erreur</button>
+`;
 
     let popup = L.popup({ className: 'main-map-popup' })
         .setLatLng(latlng)

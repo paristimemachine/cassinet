@@ -24,7 +24,7 @@ function submitProblem() {
         if (response.ok) {
             alert('Problème soumis avec succès!');
             closeModal();
-            if (departMarker) {
+            if (reportingMarker) {
                 reportingMarker.setLatLng([lat, lng]);
             } else {
               reportingMarker = L.marker([lat, lng], {icon: yellowIcon}).addTo(map);
