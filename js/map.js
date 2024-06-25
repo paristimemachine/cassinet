@@ -232,6 +232,9 @@ var loadingControl = L.Control.loading({
 map.addControl(loadingControl);
 
 map.on('click', async function(e) {
+  
+  stopAllAnimations()
+
   let latlng = e.latlng;
   lat = latlng.lat;
   lng = latlng.lng;

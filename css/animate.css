@@ -1,0 +1,9 @@
+.glow-path {
+    stroke-dasharray: 5, 10;
+    animation: dash 1s linear infinite;
+  }
+  @keyframes dash {
+    to {
+      stroke-dashoffset: -15;
+    }
+  }
