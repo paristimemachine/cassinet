@@ -81,7 +81,7 @@ let osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '© OpenStreetMap contributors'
   })
 
-let sogefiCassiniLayer = L.tileLayer.wms('https://ws.sogefi-web.com/wms?', {
+let sogefiCassiniLayer = L.tileLayer.wms('https://ms.sogefi-web.com/wms?', {
     layers: 'Carte_Cassini',
     attribution : 'EHESS/IGN/SOGEFI',
     maxZoom: 21,
@@ -89,7 +89,7 @@ let sogefiCassiniLayer = L.tileLayer.wms('https://ws.sogefi-web.com/wms?', {
     transparent: true
   });
 
-let carteCapitaine = L.tileLayer.wms('https://ws.sogefi-web.com/wms?', {
+let carteCapitaine = L.tileLayer.wms('https://ms.sogefi-web.com/wms?', {
   layers: 'Carte_Capitaine',
   attribution : 'SOGEFI',
   maxZoom: 21,
@@ -216,12 +216,20 @@ let overlays = {
 let layerControl = L.control.layers(baseLayers, overlays).addTo(map);
 
 map.on('baselayerchange', function(event) {
-   let selectedBaseLayer = event.layer;
+  // Assurez-vous de supprimer toutes les couches qui pourraient interférer
+  map.eachLayer(function(layer) {
+      if (layer !== event.layer && (layer === ignOrthoLayer || layer === ignCurrentLayer || layer === osm)) {
+          map.removeLayer(layer);
+      }
+  });
 
-   if (selectedBaseLayer !== ignOrthoLayer | selectedBaseLayer !== ignCurrentLayer | selectedBaseLayer !== osm) {
-       ignOrthoLayer.addTo(map);
-   }
+  // Ajoutez uniquement la couche sélectionnée
+  let selectedBaseLayer = event.layer;
+  if (!map.hasLayer(selectedBaseLayer)) {
+      map.addLayer(selectedBaseLayer);
+  }
 });
+
 
 //unpkg broked
 L.Control.geocoder().addTo(map);

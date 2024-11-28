@@ -1,3 +1,5 @@
+vitesse = 48;
+
 function reload(){
   window.location.reload();
 }

@@ -18,67 +18,25 @@ function compute() {
         var coordx_constraint = centre.lng;
         let radius = zoneconstraintMarker.getRadius();
         console.log(coordx_constraint + ' ' + coordy_constraint + ' ' + radius)
-        fetchShortestPathWithContraint(coordx_depart, coordy_depart, coordx_arrivee, coordy_arrivee, coordx_constraint.toFixed(6), coordy_constraint.toFixed(6), radius)
+        fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, coordy_arrivee, coordx_constraint.toFixed(6), coordy_constraint.toFixed(6), radius)
     }
 }
 
-async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, coordy_arrivee) {
-    // const url = `http://localhost:5000/shortest-path?coordx_depart=${coordx_depart}&coordy_depart=${coordy_depart}&coordx_arrivee=${coordx_arrivee}&coordy_arrivee=${coordy_arrivee}`;
-    const url = 'https://api.ptm.huma-num.fr/cassinet/search/route/?coordx_depart='+coordx_depart+'&coordy_depart='+coordy_depart+'&coordx_arrivee='+coordx_arrivee+'&coordy_arrivee='+coordy_arrivee
-    // console.log(url)
-    
-    try{
+async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, coordy_arrivee, coordx_constraint = null, coordy_constraint = null, radius = null) {
+    let url;
+    if (coordx_constraint !== null && coordy_constraint !== null && radius !== null) {
+        url = `https://api.ptm.huma-num.fr/cassinet/search/route-contrainte/?coordx_depart=${coordx_depart}&coordy_depart=${coordy_depart}&coordx_arrivee=${coordx_arrivee}&coordy_arrivee=${coordy_arrivee}&coordx_constraint=${coordx_constraint}&coordy_constraint=${coordy_constraint}&radius=${radius}`;
+    } else {
+        url = `https://api.ptm.huma-num.fr/cassinet/search/route/?coordx_depart=${coordx_depart}&coordy_depart=${coordy_depart}&coordx_arrivee=${coordx_arrivee}&coordy_arrivee=${coordy_arrivee}`;
+    }
 
+    try {
         //waiting animation on map
         map.fire('dataloading');
 
         const response = await fetch(url);
         const data = await response.json();
 
-        let coordinates = [];
-        
-        if (data.features) {
-            data.features.forEach(feature => {
-                feature.geometry.coordinates.forEach(coord => {
-                    coordinates.push(coord.join(','));
-                });
-            });
-       
-
-        let elevationData = await fetchElevationData(coordinates);
-
-        ajouterGeoJSON(data, elevationData);
-
-        afficherTempsParcours(data.temps_total);
-
-        ajouterCarteAnalyse('Itinéraire '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
-
-        }else{
-            console.log("pas de chemin existante");
-            alert("Le calcul ne renvoie pas de résultat. Il peut s'agir d'un problème lié au réseau. Pensez à faire un signalement si vous identifiez un problème sur les données")
-        }
-
-        map.fire('dataload');
-
-    }catch (error) {
-        console.error('Erreur lors de la récupération des données:', error);
-    }
-
-}
-
-async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coordx_arrivee, coordy_arrivee, coordx_constraint, coordy_constraint, radius) {
-    
-    const url = 'https://api.ptm.huma-num.fr/cassinet/search/route-contrainte/?coordx_depart='+coordx_depart+'&coordy_depart='+coordy_depart+'&coordx_arrivee='+coordx_arrivee+'&coordy_arrivee='+coordy_arrivee+'&coordx_constraint='+coordx_constraint+'&coordy_constraint='+coordy_constraint+'&radius='+radius
-        
-    try{
-
-        //waiting animation on map
-        map.fire('dataloading');
-
-        const response = await fetch(url);
-        const data = await response.json();
-
-        // Get all geom from route
         let coordinates = [];
         if (data.features) {
             data.features.forEach(feature => {
@@ -87,29 +45,24 @@ async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coor
                 });
             });
 
-            // call api for elevation data / IGN
-            const elevationData = await fetchElevationData(coordinates);
+            let elevationData = await fetchElevationData(coordinates);
 
             ajouterGeoJSON(data, elevationData);
 
-            // Display time for route
             afficherTempsParcours(data.temps_total);
 
-            ajouterCarteAnalyse('Itinéraire (contraint) '+villeDepart+' - ' + villeArrivee, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
+            ajouterCarteAnalyse(`Itinéraire ${coordx_constraint ? '(contraint) ' : ''}${villeDepart} - ${villeArrivee}`, (data.temps_total * 48) / vitesse, data.temps_total * 48, elevationData);
 
-            map.fire('dataload');
-
-        }else{
+        } else {
             console.log("pas de chemin existante");
-            alert("Le calcul ne renvoie pas de résultat. Il peut s'agir d'un problème lié au réseau. Pensez à faire un signalement si vous identifiez un problème sur les données")
+            alert("Le calcul ne renvoie pas de résultat. Il peut s'agir d'un problème lié au réseau. Pensez à faire un signalement si vous identifiez un problème sur les données");
         }
 
         map.fire('dataload');
 
-    }catch (error) {
+    } catch (error) {
         console.error('Erreur lors de la récupération des données:', error);
     }
-
 }
 
 async function fetchElevationData(coordinates) {
@@ -123,17 +76,27 @@ async function fetchElevationData(coordinates) {
     
     const lonParam = lons.join('|');
     const latParam = lats.join('|');
-    const url = `https://wxs.ign.fr/calcul/alti/rest/elevation.json?lon=${lonParam}&lat=${latParam}&indent=true`;
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    return data.elevations;
+    const url = `https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${lonParam}&lat=${latParam}&resource=ign_rge_alti_wld&delimiter=|&indent=false&measures=false&zonly=false`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.error('Erreur HTTP lors de la récupération des données d\'élévation:', response.status);
+            return coordinates.map(coord => ({ lon: coord.split(',')[0], lat: coord.split(',')[1], z: 0 }));
+        }
+        const data = await response.json();
+        return data.elevations;
+    } catch (error) {
+        console.error('Erreur lors de la récupération des données d\'élévation:', error);
+        return coordinates.map(coord => ({ lon: coord.split(',')[0], lat: coord.split(',')[1], z: 0 }));
+    }
 }
+
 
 async function ajouterGeoJSON(data, elevationDataOut) {
     const modeAjout = document.getElementById('radioBtnNouveau').checked;
 
-    // Remove layer if allready presente
+    // Remove layer if already present
     if (modeAjout && geoJsonLayer) {
         map.removeLayer(geoJsonLayer);
         geoJsonLayer = null;
@@ -144,119 +107,56 @@ async function ajouterGeoJSON(data, elevationDataOut) {
         geoJsonLayer = L.geoJSON(data, {
             style: styleRoute,
             onEachFeature: function (feature, layer) {
-                layer.on('mouseover', async function (event) {
-                    const elevationDataIn = elevationDataOut;
+                // Capture the values specific to this itinerary
+                const elevationDataIn = elevationDataOut;
+                const temps = data.temps_total;
+                const tempsDeParcours = (temps * 48) / vitesse;
+                const distance = temps * 48;
+                const chartId = 'elevationChart_' + Math.random().toString(36).substr(2, 9);
+                const url = 'https://api.ptm.huma-num.fr/cassinet/search/route/?coordx_depart=' + coordx_depart + '&coordy_depart=' + coordy_depart + '&coordx_arrivee=' + coordx_arrivee + '&coordy_arrivee=' + coordy_arrivee;
 
-                    let temps = data.temps_total;
-                    let tempsDeParcours = (temps * 48) / vitesse;
-                    let distance = temps * 48;
+                // Log the values to debug
+                console.log('Popup values:', {
+                    villeDepart,
+                    villeArrivee,
+                    tempsDeParcours,
+                    distance,
+                    chartId,
+                    url
+                });
 
-                    // chartid for D3js chart
-                    const chartId = 'elevationChart_' + Math.random().toString(36).substr(2, 9);
+                // code for pop up content
+                const popupContent = `<h2>Itinéraire ${villeDepart} - ${villeArrivee}</h2>
+                    <br>
+                    <b>Temps de parcours :</b>${tempsDeParcours.toFixed(2)} jours
+                    <br>
+                    <b>Distance :</b>${distance.toFixed(2)} km
+                    <br>
+                    <br>
+                    <b>Profil altimétrique :</b>
+                    <div class="popup-canvas-container" id="${chartId}" style="width: 100%; height: 100px;"></div>
+                    <br>
+                    <button id="downloadGeoJSON">Télécharger Chemin en GeoJSON</button>
+                    <br>
+                    <button id="copyUrl">Copier l'URL</button>
+                `;
 
-                    // code for pop up content
-                    const popupContent = `<h2>Itinéraire ${villeDepart} - ${villeArrivee}</h2>
-                        <br>
-                        <b>Temps de parcours :</b>${tempsDeParcours.toFixed(2)} jours
-                        <br>
-                        <b>Distance :</b>${distance.toFixed(2)} km
-                        <br>
-                        <br>
-                        <b>Profil altimétrique :</b>
-                        <div class="popup-canvas-container" id="${chartId}" style="width: 100%; height: 100px;"></div>
-                        <br>
-                        <button id="downloadGeoJSON">Télécharger Chemin en GeoJSON</button>
-                    `;
+                // Add popup to layer
+                layer.bindPopup(popupContent, { className: 'altimetry-popup' });
 
-                    // Add popup to layer
-                    layer.bindPopup(popupContent, { className: 'altimetry-popup' }).openPopup();
+                layer.on('mouseover', function (event) {
+                    layer.openPopup();
 
                     // Astuce... wait for pop up being ok
                     setTimeout(() => {
-                        
-                        const container = d3.select(`#${chartId}`);
-
-                        // Remove old content 
-                        container.selectAll("*").remove();
-
-                        const svgWidth = container.node().getBoundingClientRect().width;
-                        const svgHeight = container.node().getBoundingClientRect().height;
-                        const margin = { top: 10, right: 20, bottom: 30, left: 40 };
-                        const width = svgWidth - margin.left - margin.right;
-                        const height = svgHeight - margin.top - margin.bottom;
-
-                        const svg = container.append("svg")
-                            .attr("width", svgWidth)
-                            .attr("height", svgHeight)
-                            .append("g")
-                            .attr("transform", `translate(${margin.left},${margin.top})`);
-
-                        const x = d3.scalePoint()
-                            .domain(elevationDataIn.map(point => `${point.lon}, ${point.lat}`))
-                            .range([0, width]);
-
-                        const y = d3.scaleLinear()
-                            .domain([0, d3.max(elevationDataIn, d => d.z)])
-                            .nice()
-                            .range([height, 0]);
-
-                        const line = d3.line()
-                            .x(d => x(`${d.lon}, ${d.lat}`))
-                            .y(d => y(d.z))
-                            .curve(d3.curveMonotoneX);
-
-                        svg.append("g")
-                            .attr("transform", `translate(0,${height})`)
-                            .call(d3.axisBottom(x).tickSize(0).tickFormat('')); // Enlever les ticks de l'axe des x
-
-                        svg.append("g")
-                            .call(d3.axisLeft(y).tickSize(-width).ticks(3))
-                            .call(g => g.select(".domain").remove());
-
-                        svg.append("path")
-                            .datum(elevationDataIn)
-                            .attr("fill", "none")
-                            .attr("stroke", "steelblue")
-                            .attr("stroke-width", 1.5)
-                            .attr("d", line);
-
-                        const focus = svg.append("g")
-                            .style("display", "none");
-
-                        focus.append("circle")
-                            .attr("r", 4.5)
-                            .attr("fill", "steelblue");
-
-                        focus.append("text")
-                            .attr("x", 9)
-                            .attr("dy", ".35em");
-
-                        svg.append("rect")
-                            .attr("class", "overlay")
-                            .attr("width", width)
-                            .attr("height", height)
-                            .style("fill", "none")
-                            .style("pointer-events", "all")
-                            .on("mouseover", () => focus.style("display", null))
-                            .on("mouseout", () => focus.style("display", "none"))
-                            .on("mousemove", function(event) {
-                                const bisect = d3.bisector(d => d.lon).left;
-                                const x0 = x.invert(d3.pointer(event, this)[0]);
-                                const i = bisect(elevationDataIn, x0, 1);
-                                const d0 = elevationDataIn[i - 1];
-                                const d1 = elevationDataIn[i];
-                                const d = x0 - d0.lon > d1.lon - x0 ? d1 : d0;
-                                focus.attr("transform", `translate(${x(`${d.lon}, ${d.lat}`)},${y(d.z)})`);
-                                focus.select("text").text(d.z);
-                            });
-
+                        createElevationChart(chartId, elevationDataIn);
                     }, 300);
 
-                    // listener on downlod button in popup
+                    // listener on download button in popup
                     layer.getPopup().getElement().querySelector('#downloadGeoJSON').addEventListener('click', (event) => {
                         event.stopPropagation(); // No propagation event
 
-                        const filename = 'itineraire.geojson';
+                        const filename = `Cassinet ${villeDepart} - ${villeArrivee}` +'.geojson';
                         const geoJsonData = JSON.stringify(data);
                         const blob = new Blob([geoJsonData], { type: 'application/json' });
 
@@ -272,12 +172,101 @@ async function ajouterGeoJSON(data, elevationDataOut) {
                         // Clean url
                         URL.revokeObjectURL(url);
                     });
+
+                    // listener on copy URL button in popup
+                    layer.getPopup().getElement().querySelector('#copyUrl').addEventListener('click', (event) => {
+                        event.stopPropagation(); // No propagation event
+
+                        navigator.clipboard.writeText(url).then(() => {
+                            alert('URL copiée dans le presse-papier');
+                        }).catch(err => {
+                            console.error('Erreur lors de la copie de l\'URL:', err);
+                        });
+                    });
                 });
             }
         }).addTo(map);
     } else {
         geoJsonLayer.addData(data);
     }
+}
+
+function createElevationChart(chartId, elevationDataIn) {
+    const container = d3.select(`#${chartId}`);
+
+    // Remove old content 
+    container.selectAll("*").remove();
+
+    const svgWidth = container.node().getBoundingClientRect().width;
+    const svgHeight = container.node().getBoundingClientRect().height;
+    const margin = { top: 10, right: 20, bottom: 30, left: 40 };
+    const width = svgWidth - margin.left - margin.right;
+    const height = svgHeight - margin.top - margin.bottom;
+
+    const svg = container.append("svg")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    const x = d3.scalePoint()
+        .domain(elevationDataIn.map(point => `${point.lon}, ${point.lat}`))
+        .range([0, width]);
+
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(elevationDataIn, d => d.z)])
+        .nice()
+        .range([height, 0]);
+
+    const line = d3.line()
+        .x(d => x(`${d.lon}, ${d.lat}`))
+        .y(d => y(d.z))
+        .curve(d3.curveMonotoneX);
+
+    svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickSize(0).tickFormat('')); // Enlever les ticks de l'axe des x
+
+    svg.append("g")
+        .call(d3.axisLeft(y).tickSize(-width).ticks(3))
+        .call(g => g.select(".domain").remove());
+
+    svg.append("path")
+        .datum(elevationDataIn)
+        .attr("fill", "none")
+        .attr("stroke", "steelblue")
+        .attr("stroke-width", 1.5)
+        .attr("d", line);
+
+    const focus = svg.append("g")
+        .style("display", "none");
+
+    focus.append("circle")
+        .attr("r", 4.5)
+        .attr("fill", "steelblue");
+
+    focus.append("text")
+        .attr("x", 9)
+        .attr("dy", ".35em");
+
+    svg.append("rect")
+        .attr("class", "overlay")
+        .attr("width", width)
+        .attr("height", height)
+        .style("fill", "none")
+        .style("pointer-events", "all")
+        .on("mouseover", () => focus.style("display", null))
+        .on("mouseout", () => focus.style("display", "none"))
+        .on("mousemove", function(event) {
+            const bisect = d3.bisector(d => d.lon).left;
+            const x0 = x.invert(d3.pointer(event, this)[0]);
+            const i = bisect(elevationDataIn, x0, 1);
+            const d0 = elevationDataIn[i - 1];
+            const d1 = elevationDataIn[i];
+            const d = x0 - d0.lon > d1.lon - x0 ? d1 : d0;
+            focus.attr("transform", `translate(${x(`${d.lon}, ${d.lat}`)},${y(d.z)})`);
+            focus.select("text").text(d.z);
+        });
 }
 
 function computeIsochrone() {
