@@ -25,6 +25,13 @@ let villeDepart = '';
 let villeArrivee = '';
 let villeDepartIsochrone = '';
 
+let temps = 0;
+let tempsDeParcours = 0;
+let distance = 0;
+let chartId = '';
+let url2 = ''
+let elevationData;
+
 let greenIcon = new L.Icon({
   iconUrl: 'img/GreenPoint.svg',
   iconSize: [12, 12],

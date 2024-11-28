@@ -1,4 +1,5 @@
 let sameIsochrone = false;
+const geoJsonInfo = new Map();
 
 function compute() {
 
@@ -102,6 +103,13 @@ async function ajouterGeoJSON(data, elevationDataOut) {
         geoJsonLayer = null;
     }
 
+    // Initialize variables once
+    let temps = data.temps_total;
+    let tempsDeParcours = (temps * 48) / vitesse;
+    let distance = temps * 48;
+    let chartId = 'elevationChart_' + Math.random().toString(36).substr(2, 9);
+    let url = `https://api.ptm.huma-num.fr/cassinet/search/route/?coordx_depart=${coordx_depart}&coordy_depart=${coordy_depart}&coordx_arrivee=${coordx_arrivee}&coordy_arrivee=${coordy_arrivee}`;
+
     // Add new geojson data to the map
     if (!geoJsonLayer) {
         geoJsonLayer = L.geoJSON(data, {
@@ -109,14 +117,9 @@ async function ajouterGeoJSON(data, elevationDataOut) {
             onEachFeature: function (feature, layer) {
                 // Capture the values specific to this itinerary
                 const elevationDataIn = elevationDataOut;
-                const temps = data.temps_total;
-                const tempsDeParcours = (temps * 48) / vitesse;
-                const distance = temps * 48;
-                const chartId = 'elevationChart_' + Math.random().toString(36).substr(2, 9);
-                const url = 'https://api.ptm.huma-num.fr/cassinet/search/route/?coordx_depart=' + coordx_depart + '&coordy_depart=' + coordy_depart + '&coordx_arrivee=' + coordx_arrivee + '&coordy_arrivee=' + coordy_arrivee;
 
-                // Log the values to debug
-                console.log('Popup values:', {
+                // Store the information in the dictionary
+                geoJsonInfo.set(layer, {
                     villeDepart,
                     villeArrivee,
                     tempsDeParcours,
@@ -126,7 +129,7 @@ async function ajouterGeoJSON(data, elevationDataOut) {
                 });
 
                 // code for pop up content
-                const popupContent = `<h2>Itinéraire ${villeDepart} - ${villeArrivee}</h2>
+                let popupContent = `<h2>Itinéraire ${villeDepart} - ${villeArrivee}</h2>
                     <br>
                     <b>Temps de parcours :</b>${tempsDeParcours.toFixed(2)} jours
                     <br>
