@@ -45,7 +45,7 @@ async function fetchShortestPath(coordx_depart, coordy_depart, coordx_arrivee, c
             });
        
 
-        const elevationData = await fetchElevationData(coordinates);
+        let elevationData = await fetchElevationData(coordinates);
 
         ajouterGeoJSON(data, elevationData);
 
@@ -113,7 +113,6 @@ async function fetchShortestPathWithContraint(coordx_depart, coordy_depart, coor
 }
 
 async function fetchElevationData(coordinates) {
-    
     let lons = [];
     let lats = [];
     coordinates.forEach(coord => {
