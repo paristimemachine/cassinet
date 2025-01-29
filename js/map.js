@@ -188,7 +188,27 @@ let ignOrthoLayer = L.tileLayer(
       maxZoom: 21,
       tileSize: 256
   }
-).addTo(map);
+)
+
+let CassiniBNFIGN = L.tileLayer(
+  "https://data.geopf.fr/wmts?" +
+  "&REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0" +
+  "&STYLE=normal" +
+  "&TILEMATRIXSET=PM_6_14" +
+  "&FORMAT=image/png" +
+  "&LAYER=BNF-IGNF_GEOGRAPHICALGRIDSYSTEMS.CASSINI" +
+  "&TILEMATRIX={z}" +
+  "&TILEROW={y}" +
+  "&TILECOL={x}",
+  {
+      attribution: "BnF/IGN-F/Geoportail",
+      minNativeZoom: 0,
+      maxNativeZoom: 19,
+      minZoom: 0,
+      maxZoom: 21,
+      tileSize: 256
+  }
+)
 
 let baseLayers = {
     "OSM" : osm,
@@ -197,6 +217,7 @@ let baseLayers = {
     "Carte d'Etat Major" : ignEtatMajorLayer,
     "Carte de Cassini N&B" : sogefiCassiniLayer,
     "Carte de Cassini Couleur" :carteCassiniEHESSGhdb,
+    "Carte de Cassini Couleur BNF" :CassiniBNFIGN,
     "Carte de Capitaine" :carteCapitaine,
 };
 
