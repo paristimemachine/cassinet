@@ -78,60 +78,40 @@ map.on('popupopen', function (e) {
 });
 
 function chargerTrajetArthur(csvUrl) {
+    // Ajout de la variable pour suivre la polyline entre les traitements
+    let journeyLine = null;
+
     Papa.parse(csvUrl, {
         download: true,
         header: true,
         complete: function(results) {
             const data = results.data;
             // console.log(data);
+
             const today = new Date();
             const todayString = today.toISOString().split('T')[0].slice(5); // Format MM-DD
-            // console.log(todayString);
+            const currentHour = today.getHours();
 
-            // Create a polyline for the journey
-            let journeyLine = null;
-            
-            const ligneDuJour = data.find(row => {
-                const rowDate = row.date && row.date.trim();
-                const currentHour = today.getHours();
-                
-                // Calculate which segment of the journey we should be on
-                // For a journey from 8h to 20h (12 hours), divide into segments
-                let progressIndex = 0;
-                
-                if (currentHour >= 8 && currentHour <= 20) {
-                    // Calculate progress (0 to 1) through the day's journey
+            // Filtrer et trier les lignes du jour par 'ordre'
+            const todayRows = data
+                .filter(r => r.date && r.date.trim().slice(5) === todayString)
+                .sort((a, b) => parseInt(a.ordre, 10) - parseInt(b.ordre, 10));
+
+            let ligneDuJour = null;
+            if (todayRows.length > 0) {
+                let index;
+                if (currentHour < 8) {
+                    index = 0;
+                } else if (currentHour > 20) {
+                    index = todayRows.length - 1;
+                } else {
                     const dayProgress = (currentHour - 8) / 12;
-                    
-                    // Count how many entries we have for today's date
-                    const todayEntries = data.filter(r => 
-                        r.date && r.date.trim().slice(5) === todayString
-                    );
-                    
-                    if (todayEntries.length > 0) {
-                        // Calculate which entry to show based on time of day
-                        progressIndex = Math.min(
-                            Math.floor(dayProgress * todayEntries.length),
-                            todayEntries.length - 1
-                        );
-                        
-                        // If this isn't the row we want, skip it
-                        const allMatchingRows = data.filter(r => 
-                            r.date && r.date.trim().slice(5) === todayString
-                        );
-                        
-                        if (allMatchingRows.indexOf(row) !== progressIndex) {
-                            return false;
-                        }
-                    }
+                    index = Math.min(Math.floor(dayProgress * todayRows.length), todayRows.length - 1);
                 }
-                console.log(row.fid + ' ' + todayString + ' ' + rowDate );
-                return rowDate && rowDate.slice(5) === todayString;
-            });
+                ligneDuJour = todayRows[index];
+            }
 
-            // console.log(data)
             console.log(ligneDuJour);
-
             console.log(todayString);
 
             if (ligneDuJour) {
@@ -146,7 +126,7 @@ function chargerTrajetArthur(csvUrl) {
 
                 // ⚠️ À remplacer par une recherche XY via graphe Cassini plus tard
 
-                const position = L.latLng(parseFloat(ligneDuJour.y_start), parseFloat(ligneDuJour.x_start));
+                const position = L.latLng(parseFloat(ligneDuJour.y_end), parseFloat(ligneDuJour.x_end));
                 personnageMarker.setLatLng(position);
 
                 // Draw journey line for all dates up to current date
@@ -208,12 +188,12 @@ function chargerTrajetArthur(csvUrl) {
                     }
                 }
                 
-                // If there's an existing journey line, remove it first
+                // Suppression éventuelle de l’ancienne ligne
                 if (journeyLine) {
                     personnageLayer.removeLayer(journeyLine);
                 }
                 
-                // Create the polyline if we have points
+                // Création de la nouvelle ligne
                 if (journeyPoints.length > 0) {
                     journeyLine = L.polyline(journeyPoints, {
                         color: '#c83232',
