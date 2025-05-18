@@ -1,7 +1,7 @@
 //map init
 let map = L.map('map', {
   center: [46.9, 1.8],
-  zoom: 7,
+  zoom: 6,
   measureControl: true
 });
 

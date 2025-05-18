@@ -328,3 +328,71 @@
   fill: none;
   shape-rendering: crispEdges;
 }
+
+.custom-popup {
+  width: 300px;
+}
+
+.arthur-young-popup-wrapper {
+  max-width: 600px !important;
+  width: auto;
+  background-color: #fff; /* Assure un fond blanc pour la popup */
+  border-radius: 8px; /* Ajout d'un arrondi pour différencier */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Ombre pour distinction */
+  padding: 10px; /* Espacement interne */
+  overflow: hidden; /* Empêche tout débordement */
+  text-overflow: ellipsis; /* Gestion des débordements de texte */
+}
+
+.arthur-young-popup {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Aligne le contenu à gauche */
+  font-family: Arial, sans-serif;
+  font-size: 13px; /* Taille de la police légèrement réduite */
+  color: #333;
+  line-height: 1.4; /* Ajustement de l'espacement entre les lignes */
+  word-wrap: break-word; /* Permet de couper les mots longs */
+  word-break: break-word; /* Gère les mots très longs */
+  overflow-wrap: break-word; /* Compatibilité supplémentaire */
+  text-align: left; /* Aligne le texte à gauche */
+  max-width: 100%; /* Empêche le contenu de dépasser la largeur de la popup */
+  overflow: hidden; /* Cache tout débordement */
+}
+
+.arthur-young-popup img {
+  max-width: 100px; /* Limite la taille de l'image */
+  border-radius: 4px;
+  margin-bottom: 10px; /* Ajout d'un espacement sous l'image */
+  align-self: center; /* Centre l'image horizontalement */
+}
+
+.arthur-young-popup a {
+  color: #007BFF;
+  text-decoration: none;
+}
+
+.arthur-young-popup a:hover {
+  text-decoration: underline;
+}
+
+.arthur-young-popup strong {
+  word-break: break-word; /* Gère les mots longs dans les balises <strong> */
+  overflow-wrap: break-word;
+}
+
+/* Styles spécifiques pour la popup Arthur Young */
+.arthur-young-popup-wrapper .leaflet-popup-content {
+  margin: 0; /* Supprime les marges spécifiques */
+  width: auto; /* Permet une largeur dynamique */
+  max-width: 600px; /* Limite la largeur maximale */
+}
+
+.arthur-young-popup-wrapper .leaflet-popup-content-wrapper {
+  width: auto; /* Permet une largeur dynamique */
+  max-width: 600px; /* Limite la largeur maximale */
+}
+
+.arthur-young-popup-wrapper .leaflet-popup-tip {
+  display: none; /* Supprime la pointe de la popup si nécessaire */
+}
