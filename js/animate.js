@@ -130,4 +130,4 @@ async function loadAndAnimateAllGeoJSON(urls) {
     }
 }
 
-loadAndAnimateAllGeoJSON(geojsonUrls);
+// loadAndAnimateAllGeoJSON(geojsonUrls);

@@ -245,10 +245,10 @@ function chargerTrajetArthur(csvUrl) {
                 // Création de la nouvelle ligne
                 if (journeyPoints.length > 0) {
                     journeyLine = L.polyline(journeyPoints, {
-                        color: '#c83232',
+                        color: '#333333',
                         weight: 2,
-                        opacity: 0.6,
-                        dashArray: '5, 8'
+                        opacity: 0.8,
+                        dashArray: '4'
                     }).addTo(personnageLayer);
                 }
 
