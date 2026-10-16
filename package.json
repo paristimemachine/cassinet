@@ -1,6 +1,20 @@
 {
-  "dependencies": {
-    "@gouvfr/dsfr": "^1.11.2",
-    "leaflet-control-geocoder": "^2.4.0"
+  "name": "cassinet",
+  "private": true,
+  "type": "module",
+  "description": "Itinéraires et isochrones sur le réseau routier de la carte de Cassini",
+  "scripts": {
+    "build:css": "./bin/tailwindcss -i css/app.css -o css/style.css --minify",
+    "watch:css": "./bin/tailwindcss -i css/app.css -o css/style.css --watch",
+    "setup:tailwind": "mkdir -p bin && curl -sL -o bin/tailwindcss https://github.com/tailwindlabs/tailwindcss/releases/download/v4.3.3/tailwindcss-linux-x64 && chmod +x bin/tailwindcss",
+    "serve": "python3 -m http.server 8080",
+    "lint": "eslint js",
+    "format": "prettier --write js css/app.css"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.0",
+    "eslint": "^9.39.0",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2"
   }
 }

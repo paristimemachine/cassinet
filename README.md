@@ -24,43 +24,80 @@ L'application Cassinet permet de réaliser plusieurs choses :
 - calcul de plus court chemin avec une contrainte, c'est-à-dire une zone à éviter,
 - calcul d'isochrones.
 
-  Pour réaliser ces calculs, il suffit à l'utilisateur de se rendre sur un point de départ ou d'arrivée, de cliquer et de choisir :
-  - bouton vert : point de départ pour le calcul d'un plus court chemin
-  - boutn rouge : point d'arrivée pour le calcul d'un plus court chemin
-  - bouton noir : zone de contrainte matérialisé sous la forme d'un cercle et dont le rayon peut-être défini dans les paramètres.
-  - bouton bleu : point de départ d'un iscohrone, dont les bornes peuvent être saisie dans la partie gauche du menu.
+Un clic sur la carte ouvre une fenêtre indiquant la tâche urbaine la plus proche et propose de définir le point comme :
+- **Départ** (vert) ou **Arrivée** (rouge) d'un itinéraire,
+- **Isochrone** (bleu) : centre des isochrones,
+- **Zone à éviter** (noir) : cercle dont le rayon se règle dans les paramètres.
+
+Le champ de recherche (en haut du menu) permet aussi de trouver un lieu par son nom (géocodeur de la Géoplateforme IGN).
 
 # Paramètres
 
-Le menu gauche présente différents paramètres :
-- pour les plus courts chemins, une fois les points de départ et d'arrivée sélectionnés, il est possible de sélectionner une vitesse de déplacement (à pied ou à cheval). Par défaut, les vitesses sont paramétrées respectivement à 24 km/j et 48 km/j. Ces vitesses ne sont pas exactes et ne sont pas le reflet historique de toutes les voies du réseau, il s'agit d'un calcul moyen réalisé à partir des sources notre disposition, notamment l'Atlas de Révolution, vol 1.
-  Sous le bouton calcul, il est possible de réaliser soit un nouveau calcul à chaque fois, soit de cumuler des calculs en conservant les plus courts chemins calculés précédemment.
-- pour les isochrones, une fois le point de départ, un point bleu s'affiche sur la carte, il est alors possible de sélectionner des bornes (en j) des polygones isochrones qui seront créés avec le format suivant : 1, 2, 3, 4, 7, 10 par exemple.
-  Sous le bouton calcul des isochrones, il est possible de réaliser soit un nouveau calcul à chaque fois, soit de cumuler des calculs en conservant les polygones isochrones calculés précédemment.
-- le déploiement des paramètres permet de modifier les vitesses de circulation à pied ou à cheval ou encore de faire varier la taille du cercle de contrainte.
+Le menu gauche présente :
+- le **mode de déplacement** (à pied / à cheval), utilisé pour les durées et les isochrones. Par défaut, les vitesses sont de 24 km/j et 48 km/j. Ces vitesses ne sont pas exactes et ne reflètent pas la réalité historique de toutes les voies du réseau : il s'agit d'une moyenne établie à partir des sources à notre disposition, notamment l'Atlas de la Révolution, vol. 1 ;
+- l'onglet **Itinéraire** : départ, arrivée, zone à éviter éventuelle. Sous le bouton de calcul, on choisit de remplacer le résultat précédent (*Nouveau*) ou de le conserver (*Cumuler*) ;
+- l'onglet **Isochrones** : centre, durée maximale (curseur, en jours) et pas (½, 1, 2, 3 ou 5 jours), dans la limite de 10 isochrones par calcul ;
+- l'onglet **Paramètres** : vitesses, rayon de la zone à éviter, exagération du relief 3D.
 
-# Interactions avec la carte
+# Carte
 
-Lorsqu'un calcul de plus court chemin est réalisé, une trace bleue d'affiche sur la carte et matérialiser le plus court chemin.
+Le bouton « couches » en haut à droite permet de choisir le fond de carte (Cassini BnF, EHESS, N&B, Capitaine, État-major, IGN, OpenStreetMap) et d'afficher le réseau Cassini, les tâches urbaines, l'ombrage du relief et le voyage d'Arthur Young (1787).
 
-Attention, il arrive régulièrement que l'application ne renvoie rien, il peut s'agir d'un problème lié aux données. En effet, toutes les parties du réseau ne sont pas toujours routables.
+Le bouton **3D** active le relief (tuiles d'altitude Terrarium, Mapzen / AWS) : la carte s'incline, les itinéraires et isochrones épousent le terrain. Clic droit + glisser (ou Ctrl + glisser) pour faire pivoter et incliner la vue.
 
-En passant la souris ou en cliquant sur le chemin, une fenêtre de popup apparait et présente des informations relatives à la distance parcourue et au temps (relatif à la vitesse sélectionnée dans les paramètres).
-De plus, l'interface présente également un graphique d'élévation calculé à partir des points prélevés le long du chemin.
+Un clic sur un itinéraire affiche sa distance, sa durée à pied et à cheval, et permet de :
+- télécharger le chemin au format GeoJSON (pour Qgis par exemple ;),
+- copier l'URL de l'API qui a produit le calcul,
+- copier le **lien de partage** de l'application.
 
-En bas de la popup, il est possible d'exporter la trace du plus court chemin au format geojson afin de pouvoir l'exploiter dans un outil SIG (Qgis par exemple ;)
+L'adresse de la page reflète en permanence l'état de l'application (points, mode, fond de carte, 3D, vue) : la copier ou l'envoyer suffit pour partager un calcul, qui est relancé à l'ouverture du lien.
 
-# Onglet analyses
+Attention, il arrive que le calcul ne renvoie rien, il peut s'agir d'un problème lié aux données : toutes les parties du réseau ne sont pas routables.
 
-La partie gauche de l'interface est déployable avec le boutin en bas à droite et permet de faire apparaitre de nouvelles informations relatives aux chemins et isochrones calculés.
-Au démarrage, l'interface est vide.
-Dès qu'un calcul (plus court chemin ou isochrone) est réalisé, des boites apparaissent alors et présente :
-- pour les plus courts chemins : le nom du chemin, la distance et le temps ainsi que le grpahique d'élévation.
-- pour les isochrones : les coordonnées lat/long du point de départ de l'isochrones ainsi qu'un graphique présentant 3 indicateurs sur les polygones à chacun des pas des isochrones : surface / périmètre / indice de circularité de Gravelius.
+# Panneau Analyses
+
+Le panneau de droite (bouton *Analyses*) s'ouvre à chaque calcul et présente une fiche par résultat :
+- pour les plus courts chemins : distance, durées à pied et à cheval, dénivelé et profil altimétrique (altimétrie IGN). Survoler le profil montre la position correspondante sur la carte ;
+- pour les isochrones : pour chaque pas, surface, périmètre et indice de circularité (4πA/P², égal à 1 pour un disque).
+
+Chaque fiche permet de recentrer la carte sur le résultat ou de le supprimer.
 
 # Signalement
 
 Les données historiques étant issus de sources qui sont interprétés par des opérateurs de saisie ne sont pas parfaites. Il arrive régulièrement qu'une interrogation sur un calcul de plus court chemin ne donne rien.
 IL est alors possible, si toutefois cela provient d'un problème relatif au réseau (composante connexe, segment manquants, problème de topologie, etc.) de signaler cette erreur.
-Cette option est possible en réalisant un clic droit sur la carte où un petit bouton signalement permet d'ouvrir une fenêtre à compléter : nom, prénom, mail institution, descriptif. Le signament est alors fait au point cliqué sur la carte.
+Cette option est possible en cliquant sur la carte puis sur « Signaler un problème ici », qui ouvre une fenêtre à compléter : nom, prénom, mail institution, descriptif. Le signament est alors fait au point cliqué sur la carte.
 Nous prendrons alors les mesures nécessaires pour réaliser des corrections sur la base afin que celle-ci soit enrichie peu à peu des contributions des utilisateurs menant alors à un nouveau dépôt du réseau viaire des Cartes de Cassini.
+
+# Développement
+
+Le front est en JavaScript « vanilla » (modules ES natifs, sans bundler) :
+- [MapLibre GL JS](https://maplibre.org/) pour la carte, d3 pour les graphiques, Turf pour les calculs géométriques, PapaParse pour le CSV d'Arthur Young, chargés depuis jsDelivr (versions figées, avec empreintes SRI) ;
+- [Tailwind CSS v4](https://tailwindcss.com/) compilé en CSS statique : la page n'a besoin d'aucune étape de build au déploiement, mais `css/style.css` doit être régénéré après modification des classes.
+
+```
+index.html          page et gabarit
+css/app.css         source Tailwind (composants, surcharges MapLibre)
+css/style.css       CSS compilé — ne pas éditer à la main
+js/main.js          point d'entrée
+js/config.js        URLs, vitesses, fonds de carte, couleurs
+js/map.js           carte, couches, relief 3D, contrôles
+js/points.js        choix des points, popup de la carte, recherche
+js/route.js         itinéraires et profil altimétrique
+js/isochrone.js     isochrones et légende
+js/analysis.js      fiches du panneau Analyses
+js/share.js         état dans l'URL (lien de partage)
+js/ay.js            voyage d'Arthur Young
+```
+
+Commandes :
+
+```bash
+npm install              # outils de développement (ESLint, Prettier)
+npm run setup:tailwind   # télécharge le binaire Tailwind CLI dans bin/
+npm run watch:css        # recompile css/style.css en continu
+npm run serve            # serveur local sur http://localhost:8080
+npm run lint && npm run format
+```
+
+Le dossier `data/` (CSV et illustrations d'Arthur Young, chemins exemples) n'est pas versionné.

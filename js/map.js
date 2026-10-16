@@ -1,368 +1,384 @@
-//map init
-let map = L.map('map', {
-  center: [46.9, 1.8],
-  zoom: 6,
-  measureControl: true
-});
+// Carte MapLibre : style (fonds, relief, couches), contrôles, marqueurs.
+import { BASEMAPS, OVERLAYS, MARTIN_BASE, TERRAIN_TILES, TERRAIN_ATTRIBUTION, INITIAL_VIEW, POINT_COLORS } from './config.js';
+import { state } from './state.js';
+import { el } from './utils.js';
 
-let scale = L.control.scale({imperial:false}).addTo(map);
+export let map;
 
-let departMarker = null;
-let arriveeMarker = null;
-let isochroneMarker = null;
-let zoneconstraintMarker = null;
-let reportingMarker = null;
+export const EMPTY = { type: 'FeatureCollection', features: [] };
 
-//lat, long click
-let lat = 0;
-let lng = 0;
-
-//coordonnées départ / arrivée
-let [coordy_depart, coordx_depart] = [0,0];
-let [coordy_arrivee, coordx_arrivee] = [0,0];
-
-let villeDepart = '';
-let villeArrivee = '';
-let villeDepartIsochrone = '';
-
-let temps = 0;
-let tempsDeParcours = 0;
-let distance = 0;
-let chartId = '';
-let url2 = ''
-let elevationData;
-
-let greenIcon = new L.Icon({
-  iconUrl: 'img/GreenPoint.svg',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  // popupAnchor: [1, -34],
-});
-
-let redIcon = new L.Icon({
-  iconUrl: 'img/RedPoint.svg',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  // popupAnchor: [1, -34],
-});
-
-let orangeIcon = new L.Icon({
-  iconUrl: 'img/OrangePoint.svg',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  // popupAnchor: [1, -34],
-});
-
-let blueIcon = new L.Icon({
-  iconUrl: 'img/BluePoint.svg',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  // popupAnchor: [1, -34],
-});
-
-let yellowIcon = new L.Icon({
-  iconUrl: 'img/YellowPoint.svg',
-  iconSize: [12, 12],
-  iconAnchor: [6, 6],
-  // popupAnchor: [1, -34],
-});
-
-var styleRoute = {
-  "color": "#1111ff",
-  "weight": 2,
-  "opacity": 1
+const OVERLAY_LAYERS = {
+  reseau: ['reseau'],
+  taches: ['taches'],
+  hillshade: ['hillshade'],
+  ay: ['ay-line', 'ay-steps'],
 };
 
-var styleIsochrone = {
-  "color": "#0000ff",
-  "weight": 1,
-  "opacity": 0.25
-};
+const visibility = (on) => (on ? 'visible' : 'none');
+const geojson = () => ({ type: 'geojson', data: EMPTY });
 
-let geoJsonLayer  = {}
-let geoJsonLayerIso = {}
-let data;
+// Notifie main.js qu'un élément partageable de l'état a changé (cf. share.js)
+export const notifyChange = () => document.dispatchEvent(new CustomEvent('cassinet:change'));
 
-let osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '© OpenStreetMap contributors'
-  })
+function buildStyle() {
+  const sources = {};
+  // Blanc : se raccorde aux marges blanches des tuiles de la carte de Cassini (BnF)
+  const layers = [{ id: 'background', type: 'background', paint: { 'background-color': '#ffffff' } }];
 
-let sogefiCassiniLayer = L.tileLayer.wms('https://ms.sogefi-web.com/wms?', {
-    layers: 'Carte_Cassini',
-    attribution : 'EHESS/IGN/SOGEFI',
-    maxZoom: 21,
-    format: 'image/png',
-    transparent: true
+  for (const b of BASEMAPS) {
+    sources[`base-${b.id}`] = {
+      type: 'raster',
+      tiles: b.tiles,
+      tileSize: 256,
+      minzoom: b.minzoom ?? 0,
+      maxzoom: b.maxzoom ?? 18,
+      bounds: b.bounds,
+      attribution: b.attribution,
+    };
+    layers.push({
+      id: `base-${b.id}`,
+      type: 'raster',
+      source: `base-${b.id}`,
+      layout: { visibility: visibility(b.id === state.basemap) },
+    });
+  }
+
+  // Deux sources distinctes pour le relief 3D et l'ombrage (recommandé par MapLibre)
+  const dem = { type: 'raster-dem', tiles: TERRAIN_TILES, encoding: 'terrarium', tileSize: 256, maxzoom: 15 };
+  sources.terrain = { ...dem, attribution: TERRAIN_ATTRIBUTION };
+  sources.hillshade = dem;
+
+  sources.reseau = {
+    type: 'vector',
+    tiles: [`${MARTIN_BASE}/france_cassini_edge/{z}/{x}/{y}`],
+    maxzoom: 14,
+    attribution: 'Réseau : EHESS / LaDéHis / GeoHistoricalData',
+  };
+  sources.taches = { type: 'vector', tiles: [`${MARTIN_BASE}/taches_urbaines/{z}/{x}/{y}`], maxzoom: 14 };
+  for (const id of ['isochrones', 'constraint', 'routes', 'hover', 'ay-line', 'ay-steps', 'anim']) {
+    sources[id] = geojson();
+  }
+
+  const overlay = (id) => ({ visibility: visibility(state.overlays.has(id)) });
+
+  layers.push(
+    {
+      id: 'hillshade',
+      type: 'hillshade',
+      source: 'hillshade',
+      layout: overlay('hillshade'),
+      paint: { 'hillshade-exaggeration': 0.35, 'hillshade-shadow-color': '#3d3226' },
+    },
+    {
+      id: 'reseau',
+      type: 'line',
+      source: 'reseau',
+      'source-layer': 'france_cassini_edge',
+      layout: overlay('reseau'),
+      paint: {
+        'line-color': ['match', ['get', 'road_type'], 'rouge', '#bb2211', '#111111'],
+        'line-opacity': 0.6,
+        'line-width': ['interpolate', ['linear'], ['zoom'], 5, 0.5, 12, 2],
+      },
+    },
+    {
+      id: 'taches',
+      type: 'fill',
+      source: 'taches',
+      'source-layer': 'taches_urbaines',
+      layout: overlay('taches'),
+      paint: { 'fill-color': '#ee0000', 'fill-opacity': 0.6 },
+    },
+    {
+      id: 'iso-fill',
+      type: 'fill',
+      source: 'isochrones',
+      // Les pas les plus courts sont dessinés au-dessus
+      layout: { 'fill-sort-key': ['*', -1, ['get', 'step']] },
+      paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.35 },
+    },
+    {
+      id: 'iso-line',
+      type: 'line',
+      source: 'isochrones',
+      paint: { 'line-color': ['get', 'color'], 'line-width': 1.2 },
+    },
+    {
+      id: 'constraint-fill',
+      type: 'fill',
+      source: 'constraint',
+      paint: { 'fill-color': '#000000', 'fill-opacity': 0.15 },
+    },
+    {
+      id: 'constraint-line',
+      type: 'line',
+      source: 'constraint',
+      paint: { 'line-color': '#000000', 'line-width': 1.5, 'line-dasharray': [3, 2] },
+    },
+    {
+      id: 'ay-line',
+      type: 'line',
+      source: 'ay-line',
+      layout: overlay('ay'),
+      paint: { 'line-color': '#333333', 'line-width': 2, 'line-opacity': 0.8, 'line-dasharray': [2, 2] },
+    },
+    {
+      id: 'ay-steps',
+      type: 'circle',
+      source: 'ay-steps',
+      layout: overlay('ay'),
+      paint: { 'circle-radius': 4, 'circle-color': '#c83232', 'circle-stroke-color': '#ffffff', 'circle-stroke-width': 1 },
+    },
+    {
+      id: 'anim-line',
+      type: 'line',
+      source: 'anim',
+      layout: { 'line-cap': 'round' },
+      paint: { 'line-color': ['get', 'color'], 'line-width': 2, 'line-opacity': 0.7, 'line-dasharray': [1, 2] },
+    },
+    {
+      id: 'route-casing',
+      type: 'line',
+      source: 'routes',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 7, 'line-opacity': 0.85 },
+    },
+    {
+      id: 'route-line',
+      type: 'line',
+      source: 'routes',
+      layout: { 'line-join': 'round', 'line-cap': 'round' },
+      paint: { 'line-color': ['get', 'color'], 'line-width': 3.5 },
+    },
+    {
+      id: 'hover',
+      type: 'circle',
+      source: 'hover',
+      paint: { 'circle-radius': 6, 'circle-color': '#ffffff', 'circle-stroke-color': '#1d4ed8', 'circle-stroke-width': 3 },
+    },
+  );
+
+  return {
+    version: 8,
+    sources,
+    layers,
+    sky: {
+      'sky-color': '#a9c6e3',
+      'horizon-color': '#efe9dc',
+      'fog-color': '#efe9dc',
+      'sky-horizon-blend': 0.6,
+      'horizon-fog-blend': 0.7,
+      'fog-ground-blend': 0.85,
+    },
+  };
+}
+
+export function createMap(camera) {
+  map = new maplibregl.Map({
+    container: 'map',
+    style: buildStyle(),
+    center: camera?.center ?? INITIAL_VIEW.center,
+    zoom: camera?.zoom ?? INITIAL_VIEW.zoom,
+    bearing: camera?.bearing ?? 0,
+    pitch: camera?.pitch ?? 0,
+    maxPitch: 80,
+    attributionControl: { compact: true },
   });
+  map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'top-right');
+  map.addControl(new TerrainToggle(), 'top-right');
+  map.addControl(new LayerControl(), 'top-right');
+  map.addControl(new maplibregl.ScaleControl({ unit: 'metric' }), 'bottom-left');
 
-let carteCapitaine = L.tileLayer.wms('https://ms.sogefi-web.com/wms?', {
-  layers: 'Carte_Capitaine',
-  attribution : 'SOGEFI',
-  maxZoom: 21,
-  format: 'image/png',
-  transparent: true
-});
+  return new Promise((resolve) =>
+    map.once('load', () => {
+      // Sans vue explicite dans le lien, on incline la carte pour montrer le relief
+      if (state.terrain) setTerrain(true, { animate: !camera });
+      resolve(map);
+    }),
+  );
+}
 
-let carteCassiniEHESSGhdb = L.tileLayer.wms('https://geohistoricaldata.org/geoserver/cassini-ehess/CASSINI/wms?', {
-  layers: 'CASSINI',
-  attribution : 'EHESS / GeoHistoricalData',
-  maxZoom: 21,
-  format: 'image/png',
-  transparent: true
-}).addTo(map);
+// ---------------------------------------------------------------------------
+// Fonds, couches, relief
+// ---------------------------------------------------------------------------
 
-let tachesUrbaines = L.vectorGrid
-  .protobuf('https://api.ptm.huma-num.fr/martin/taches_urbaines/{z}/{x}/{y}', {
-  vectorTileLayerStyles: {
-    'taches_urbaines': function(properties, zoom) {
-      return {
-        fillColor: '#ee0000',
-        fillOpacity: 0.7,
-        //fillOpacity: 1,
-        stroke: true,
-        fill: true,
-        color: 'black',
-          //opacity: 0.2,
-        weight: 0,
-      }
-    }
+export function setBasemap(id) {
+  state.basemap = id;
+  for (const b of BASEMAPS) map.setLayoutProperty(`base-${b.id}`, 'visibility', visibility(b.id === id));
+  syncControls();
+  notifyChange();
+}
+
+export function setOverlay(id, on) {
+  if (on) state.overlays.add(id);
+  else state.overlays.delete(id);
+  for (const layer of OVERLAY_LAYERS[id]) map.setLayoutProperty(layer, 'visibility', visibility(on));
+  document.dispatchEvent(new CustomEvent('cassinet:overlay', { detail: { id, on } }));
+  syncControls();
+}
+
+export function setTerrain(on, { animate = true } = {}) {
+  state.terrain = on;
+  map.setTerrain(on ? { source: 'terrain', exaggeration: state.exaggeration } : null);
+  if (animate) {
+    if (on && map.getPitch() < 30) map.easeTo({ pitch: 60, duration: 1200 });
+    if (!on) map.easeTo({ pitch: 0, bearing: 0, duration: 800 });
   }
-});
+  syncControls();
+  notifyChange();
+}
 
-let ignCurrentLayer = L.tileLayer(
-  "https://data.geopf.fr/wmts?" +
-  "&REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0" +
-  "&STYLE=normal" +
-  "&TILEMATRIXSET=PM" +
-  "&FORMAT=image/png" +
-  "&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2" +
-  "&TILEMATRIX={z}" +
-  "&TILEROW={y}" +
-  "&TILECOL={x}",
-  {
-      attribution: "IGN-F/Geoportail",
-      minNativeZoom: 0,
-      maxNativeZoom: 19,
-      minZoom: 0,
-      maxZoom: 21,
-      tileSize: 256
+export function setExaggeration(value) {
+  state.exaggeration = value;
+  if (state.terrain) map.setTerrain({ source: 'terrain', exaggeration: value });
+}
+
+export const setData = (sourceId, data) => map.getSource(sourceId)?.setData(data ?? EMPTY);
+
+export function fitTo(geojsonData) {
+  const [w, s, e, n] = turf.bbox(geojsonData);
+  // Le panneau d'analyse vient peut-être de s'ouvrir et de réduire la carte
+  map.resize();
+  map.fitBounds(
+    [
+      [w, s],
+      [e, n],
+    ],
+    { padding: 60, maxZoom: 13, duration: 900 },
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Marqueurs (départ, arrivée, centre d'isochrone, signalement) et zone à éviter
+// ---------------------------------------------------------------------------
+
+const MARKER_LABELS = { depart: 'Départ', arrivee: 'Arrivée', isochrone: "Centre de l'isochrone", reporting: 'Signalement' };
+const markers = {};
+
+export function placeMarker(type, lngLat) {
+  if (!markers[type]) {
+    const element = el('div', {
+      class: 'map-marker',
+      style: `--marker-color: ${POINT_COLORS[type]}`,
+      title: MARKER_LABELS[type],
+      role: 'img',
+      'aria-label': MARKER_LABELS[type],
+    });
+    markers[type] = new maplibregl.Marker({ element });
   }
-);
+  markers[type].setLngLat(lngLat).addTo(map);
+}
 
-let ignEtatMajorLayer = L.tileLayer(
-  "https://data.geopf.fr/wmts?" +
-  "&REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0" +
-  "&STYLE=normal" +
-  "&TILEMATRIXSET=PM" +
-  "&FORMAT=image/jpeg" +
-  "&LAYER=GEOGRAPHICALGRIDSYSTEMS.ETATMAJOR40" +
-  "&TILEMATRIX={z}" +
-  "&TILEROW={y}" +
-  "&TILECOL={x}",
-  {
-      attribution: "IGN-F/Geoportail",
-      minNativeZoom: 6,
-      maxNativeZoom: 15,
-      minZoom: 0,
-      maxZoom: 21,
-      tileSize: 256
+export function removeMarker(type) {
+  markers[type]?.remove();
+}
+
+export function showConstraint(constraint) {
+  setData('constraint', constraint && turf.circle(constraint.lngLat, constraint.radiusKm, { steps: 96, units: 'kilometers' }));
+}
+
+// ---------------------------------------------------------------------------
+// Contrôles
+// ---------------------------------------------------------------------------
+
+const controlSyncs = new Set();
+const syncControls = () => controlSyncs.forEach((sync) => sync());
+
+const LAYERS_ICON =
+  '<svg class="size-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M6.429 9.75L2.25 12l4.179 2.25m0-4.5l5.571 3 5.571-3m-11.142 0L2.25 7.5 12 2.25l9.75 5.25-4.179 2.25m0 0L21.75 12l-4.179 2.25m0 0l4.179 2.25L12 21.75 2.25 16.5l4.179-2.25m11.142 0l-5.571 3-5.571-3"/></svg>';
+
+class TerrainToggle {
+  onAdd() {
+    this.button = el(
+      'button',
+      {
+        type: 'button',
+        class: 'terrain-toggle',
+        title: 'Relief 3D',
+        'aria-label': 'Relief 3D',
+        onclick: () => setTerrain(!state.terrain),
+      },
+      '3D',
+    );
+    this.sync = () => this.button.setAttribute('aria-pressed', state.terrain);
+    controlSyncs.add(this.sync);
+    this.sync();
+    this.container = el('div', { class: 'maplibregl-ctrl maplibregl-ctrl-group' }, this.button);
+    return this.container;
   }
-);
 
-let ignOrthoLayer = L.tileLayer(
-  "https://data.geopf.fr/wmts?" +
-  "&REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0" +
-  "&STYLE=normal" +
-  "&TILEMATRIXSET=PM" +
-  "&FORMAT=image/jpeg" +
-  "&LAYER=ORTHOIMAGERY.ORTHOPHOTOS" +
-  "&TILEMATRIX={z}" +
-  "&TILEROW={y}" +
-  "&TILECOL={x}",
-  {
-      attribution: "IGN-F/Geoportail",
-      minNativeZoom: 0,
-      maxNativeZoom: 19,
-      minZoom: 0,
-      maxZoom: 21,
-      tileSize: 256
-  }
-)
-
-let CassiniBNFIGN = L.tileLayer(
-  "https://data.geopf.fr/wmts?" +
-  "&REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0" +
-  "&STYLE=normal" +
-  "&TILEMATRIXSET=PM_6_14" +
-  "&FORMAT=image/png" +
-  "&LAYER=BNF-IGNF_GEOGRAPHICALGRIDSYSTEMS.CASSINI" +
-  "&TILEMATRIX={z}" +
-  "&TILEROW={y}" +
-  "&TILECOL={x}",
-  {
-      attribution: "BnF/IGN-F/Geoportail",
-      minNativeZoom: 0,
-      maxNativeZoom: 19,
-      minZoom: 0,
-      maxZoom: 21,
-      tileSize: 256
-  }
-)
-
-let baseLayers = {
-    "OSM" : osm,
-    "IGN Plan actuel" : ignCurrentLayer,
-    "IGN Orthophotographie" : ignOrthoLayer,
-    "Carte d'Etat Major" : ignEtatMajorLayer,
-    "Carte de Cassini N&B" : sogefiCassiniLayer,
-    "Carte de Cassini Couleur" :carteCassiniEHESSGhdb,
-    "Carte de Cassini Couleur BNF" :CassiniBNFIGN,
-    "Carte de Capitaine" :carteCapitaine,
-};
-
-let reseauCassini = L.vectorGrid
-.protobuf('https://api.ptm.huma-num.fr/martin/france_cassini_edge/{z}/{x}/{y}', {
-vectorTileLayerStyles: {
-  'france_cassini_edge': function(properties, zoom) {
-    let type = properties.road_type
-    return {
-      color:  type === 'rouge' ? '#bb2211' :
-              type === 'blanc' ? '#010101' : '#111111',
-      opacity: 0.5,
-      weight:1,
-    }
+  onRemove() {
+    controlSyncs.delete(this.sync);
+    this.container.remove();
   }
 }
-});
 
-let overlays = {
-  "Tâches urbaines" : tachesUrbaines,
-  "Réseau Cassini" : reseauCassini,
-};
+class LayerControl {
+  onAdd() {
+    const panel = el('div', { class: 'layer-panel', id: 'layerPanel', hidden: true });
 
-let layerControl = L.control.layers(baseLayers, overlays).addTo(map);
+    const baseInputs = BASEMAPS.map((b) =>
+      el('input', { type: 'radio', name: 'basemap', value: b.id, onchange: () => setBasemap(b.id) }),
+    );
+    const overlayInputs = OVERLAYS.map((o) =>
+      el('input', { type: 'checkbox', value: o.id, onchange: (e) => setOverlay(o.id, e.target.checked) }),
+    );
+    const terrainInput = el('input', { type: 'checkbox', onchange: (e) => setTerrain(e.target.checked) });
 
-map.on('baselayerchange', function(event) {
-  // Assurez-vous de supprimer toutes les couches qui pourraient interférer
-  map.eachLayer(function(layer) {
-      if (layer !== event.layer && (layer === ignOrthoLayer || layer === ignCurrentLayer || layer === osm)) {
-          map.removeLayer(layer);
-      }
-  });
+    panel.append(
+      el(
+        'fieldset',
+        {},
+        el('legend', {}, 'Fond de carte'),
+        BASEMAPS.map((b, i) => el('label', { class: 'layer-option' }, baseInputs[i], b.label)),
+      ),
+      el(
+        'fieldset',
+        {},
+        el('legend', {}, 'Couches'),
+        OVERLAYS.map((o, i) => el('label', { class: 'layer-option' }, overlayInputs[i], o.label)),
+        el('label', { class: 'layer-option' }, terrainInput, 'Relief 3D'),
+      ),
+    );
 
-  // Ajoutez uniquement la couche sélectionnée
-  let selectedBaseLayer = event.layer;
-  if (!map.hasLayer(selectedBaseLayer)) {
-      map.addLayer(selectedBaseLayer);
-  }
-});
-
-
-//unpkg broked
-L.Control.geocoder().addTo(map);
-
-var loadingControl = L.Control.loading({
-  separate: true
-});
-map.addControl(loadingControl);
-
-map.on('click', async function(e) {
-  
-  stopAllAnimations()
-
-  let latlng = e.latlng;
-  lat = latlng.lat;
-  lng = latlng.lng;
-
-  // Format coord to 6 digits
-  let coordsText = `Latitude: ${lat.toFixed(6)}, Longitude: ${lng.toFixed(6)}`;
-
-  const response = await fetch('https://api.ptm.huma-num.fr/cassinet/cherche_tache_urbaine/?longitude='+lng+'&latitude='+lat)
-  if (!response.ok) {
-    throw new Error('La réponse du serveur n\'est pas OK');
-  }
-  const data = await response.json();
-  // console.log(data);
-
-  let tacheUrbaineProche = data[0]['nom'];
-
-  //bug when toponym contain ticks like Pont l'abbé
-  let tacheUrbaineProcheEscaped = tacheUrbaineProche.replace(/'/g, "\\'");
-
-  // Main pop up on map 
-  let popupContent = `
-    <div><h1><b>Tâche urbaine la plus proche :<br> ${tacheUrbaineProcheEscaped} à ${data[0]['distance'].toFixed(1)} (m)</b></h1><br>
-    <h3><b>${coordsText}</b></h3></div>
-    <br>
-    <button id="buttonModalStart" onclick="setCoords('depart', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Définir comme départ</button>
-    <button id="buttonModalEnd" onclick="setCoords('arrivee', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Définir comme arrivée</button>
-    <button id="buttonModalIsochrone" onclick="setCoords('departisochrone', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Centre Isochrone</button>
-    <button id="buttonModalConstraints" onclick="setCoords('zoneconstraint', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Contrainte</button>
-    <button id="buttonModalReporting" onclick="setCoords('reporting', ${lat}, ${lng}, '${tacheUrbaineProcheEscaped}')">Signaler une erreur</button>
-`;
-
-    let popup = L.popup({ className: 'main-map-popup' })
-        .setLatLng(latlng)
-        .setContent(popupContent)
-        .openOn(map);
-  });
-
-  // bad name for this function...
-  // traite le choix de l'utilisateur au click sur modale
-  function setCoords(type, lat, lng, nomTacheUrbaineProche) {
-    // format coord
-    let coords = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
-    if (type === 'depart') {
-      villeDepart = nomTacheUrbaineProche;
-      let nomtacheDepart = villeDepart ? villeDepart : "";
-      [coordy_depart, coordx_depart] = [lat, lng];
-      coords = `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
-      document.getElementById('inputStart').value = nomtacheDepart + ' ['+coords+']';
-        if (departMarker) {
-          departMarker.setLatLng([lat, lng]);
-      } else {
-          departMarker = L.marker([lat, lng], {icon: greenIcon}).addTo(map);
-      }
-    } else if (type === 'arrivee') {
-        villeArrivee = nomTacheUrbaineProche;
-        let nomtacheArrivee = villeArrivee ? villeArrivee : "";
-        [coordy_arrivee, coordx_arrivee] = [lat, lng];
-        coords = `${lat.toFixed(2)}, ${lng.toFixed(2)}`;
-        document.getElementById('inputEnd').value = nomtacheArrivee + ' ['+coords+']';
-        if (arriveeMarker) {
-          arriveeMarker.setLatLng([lat, lng]);
-      } else {
-          arriveeMarker = L.marker([lat, lng], {icon: redIcon}).addTo(map);
-      }
-    } else if (type === 'departisochrone') {
-      document.getElementById('isochroneStart').value = coords;
-      villeDepartIsochrone = nomTacheUrbaineProche;
-      if (isochroneMarker) {
-        isochroneMarker.setLatLng([lat, lng]);
-    } else {
-        isochroneMarker = L.marker([lat, lng], {icon: blueIcon}).addTo(map);
-    }
-    } else if (type === 'zoneconstraint') {
-      let radius = document.getElementById('contrainte').value;
-      if (zoneconstraintMarker) {
-        zoneconstraintMarker.setLatLng([lat, lng]);
-        zoneconstraintMarker.setRadius(radius*1000);
-    } else {
-      zoneconstraintMarker = L.circle([lat,lng], radius*1000).addTo(map);
-      zoneconstraintMarker.setStyle({color: 'black'});
-      zoneconstraintMarker.on('click', function() {
-        map.removeLayer(zoneconstraintMarker);
-        zoneconstraintMarker = null;
+    this.sync = () => {
+      baseInputs.forEach((input) => {
+        input.checked = input.value === state.basemap;
       });
-    }
-    }  else if (type === 'reporting') {
-      document.getElementById('inputStart').value = coords;
-      
-      openModal();
-    }
+      overlayInputs.forEach((input) => {
+        input.checked = state.overlays.has(input.value);
+      });
+      terrainInput.checked = state.terrain;
+    };
+    controlSyncs.add(this.sync);
+    this.sync();
 
-    map.closePopup();
+    const button = el('button', {
+      type: 'button',
+      title: 'Fonds et couches',
+      'aria-label': 'Fonds de carte et couches',
+      'aria-expanded': 'false',
+      'aria-controls': 'layerPanel',
+      html: LAYERS_ICON,
+    });
+    const setOpen = (open) => {
+      panel.hidden = !open;
+      button.setAttribute('aria-expanded', open);
+    };
+    button.addEventListener('click', () => setOpen(panel.hidden));
+    this.onDocClick = (e) => !this.container.contains(e.target) && setOpen(false);
+    document.addEventListener('click', this.onDocClick);
+    this.onKey = (e) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', this.onKey);
+
+    this.container = el('div', { class: 'maplibregl-ctrl maplibregl-ctrl-group layer-control' }, button, panel);
+    return this.container;
+  }
+
+  onRemove() {
+    controlSyncs.delete(this.sync);
+    document.removeEventListener('click', this.onDocClick);
+    document.removeEventListener('keydown', this.onKey);
+    this.container.remove();
+  }
 }
-  

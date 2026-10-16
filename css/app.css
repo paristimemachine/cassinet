@@ -1,0 +1,384 @@
+/* Source Tailwind v4 — compilée vers css/style.css (npm run build:css). */
+@import 'tailwindcss';
+
+@source "../index.html";
+@source "../js";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Open Sans', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+  :root.dark {
+    color-scheme: dark;
+  }
+  button:not(:disabled),
+  [role='tab'],
+  label:has(input) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-blue-600);
+    outline-offset: 2px;
+  }
+  [hidden] {
+    display: none !important;
+  }
+}
+
+@layer components {
+  /* --- Mise en page ------------------------------------------------------ */
+  .sidebar {
+    @apply fixed inset-y-0 left-0 z-40 flex w-80 max-w-[90vw] -translate-x-full flex-col border-r border-stone-200 bg-stone-50 shadow-xl transition-transform duration-200
+      md:static md:z-auto md:translate-x-0 md:shadow-none
+      dark:border-stone-800 dark:bg-stone-900;
+  }
+  .sidebar.is-open {
+    @apply translate-x-0;
+  }
+  .sidebar-backdrop {
+    @apply pointer-events-none fixed inset-0 z-30 bg-stone-950/40 opacity-0 transition-opacity md:hidden;
+  }
+  .sidebar.is-open + .sidebar-backdrop {
+    @apply pointer-events-auto opacity-100;
+  }
+
+  .analysis-panel {
+    @apply fixed inset-y-0 right-0 z-40 flex w-full translate-x-full flex-col border-l border-stone-200 bg-stone-50 shadow-xl transition-transform duration-200
+      sm:w-100
+      dark:border-stone-800 dark:bg-stone-900;
+  }
+  .analysis-panel.is-open {
+    @apply translate-x-0;
+  }
+  .analysis-toggle {
+    @apply fixed right-3 bottom-8 z-30 flex items-center gap-2 rounded-full bg-stone-800 px-4 py-2 text-sm font-semibold text-white shadow-lg transition
+      hover:bg-stone-700
+      dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white;
+  }
+  .analysis-open .analysis-toggle {
+    @apply invisible;
+  }
+  /* À partir de lg, le panneau se range à côté de la carte (contrôles accessibles) */
+  .analysis-open main {
+    @apply lg:mr-100;
+  }
+  .badge {
+    @apply grid min-w-5 place-items-center rounded-full bg-blue-600 px-1.5 text-xs text-white;
+  }
+
+  /* --- Contrôles ------------------------------------------------------- */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition
+      hover:bg-stone-700 disabled:opacity-60
+      dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white;
+  }
+  .btn-primary[aria-busy='true']::before {
+    content: '';
+    @apply size-4 animate-spin rounded-full border-2 border-current border-t-transparent;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center rounded-lg border border-stone-300 px-4 py-2.5 text-sm font-semibold transition
+      hover:bg-stone-100
+      dark:border-stone-700 dark:hover:bg-stone-800;
+  }
+  .btn-chip {
+    @apply rounded-full border border-stone-300 bg-white px-3 py-1 text-xs font-medium transition
+      hover:bg-stone-100
+      dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700;
+  }
+  .icon-btn {
+    @apply grid size-8 shrink-0 place-items-center rounded-md text-lg leading-none text-stone-500 transition
+      hover:bg-stone-200 hover:text-stone-800
+      dark:text-stone-400 dark:hover:bg-stone-800 dark:hover:text-stone-100;
+  }
+  .map-button {
+    @apply z-10 grid size-10 place-items-center rounded-lg bg-white text-stone-700 shadow-md dark:bg-stone-800 dark:text-stone-100;
+  }
+  .link {
+    @apply font-medium text-blue-700 underline-offset-2 hover:underline dark:text-blue-400;
+  }
+
+  .field {
+    @apply block w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm shadow-xs
+      placeholder:text-stone-400
+      focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20
+      dark:border-stone-700 dark:bg-stone-800;
+  }
+  .field-group {
+    @apply relative;
+  }
+  .field-group > span {
+    @apply pointer-events-none absolute inset-y-0 right-3 flex items-center text-sm text-stone-500;
+  }
+  .field-group > .field {
+    @apply pr-14;
+  }
+  .range {
+    accent-color: var(--color-stone-800);
+  }
+  .dark .range {
+    accent-color: var(--color-stone-200);
+  }
+
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
+  }
+  .hint {
+    @apply text-sm text-stone-500 dark:text-stone-400;
+  }
+
+  .segmented {
+    @apply grid grid-cols-2 gap-1 rounded-xl bg-stone-200/70 p-1 dark:bg-stone-800;
+  }
+  .segmented label {
+    @apply flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-sm font-semibold text-stone-600 transition dark:text-stone-300;
+  }
+  .segmented label:has(:checked) {
+    @apply bg-white text-stone-900 shadow-sm dark:bg-stone-700 dark:text-white;
+  }
+  .segmented label:has(:focus-visible),
+  .segmented-sm label:has(:focus-visible) {
+    @apply outline-2 outline-offset-2 outline-blue-600;
+  }
+  .segmented-sm {
+    @apply flex justify-center gap-1 text-sm;
+  }
+  .segmented-sm label span {
+    @apply block rounded-full px-3 py-1 text-stone-500 transition dark:text-stone-400;
+  }
+  .segmented-sm label:has(:checked) span {
+    @apply bg-stone-200 font-semibold text-stone-900 dark:bg-stone-700 dark:text-white;
+  }
+
+  .tablist {
+    @apply flex gap-1 border-b border-stone-200 px-4 dark:border-stone-800;
+  }
+  .tablist [role='tab'] {
+    @apply -mb-px border-b-2 border-transparent px-2.5 py-2 text-sm font-semibold text-stone-500 transition hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-100;
+  }
+  .tablist [role='tab'][aria-selected='true'] {
+    @apply border-stone-800 text-stone-900 dark:border-stone-100 dark:text-white;
+  }
+
+  .point-field {
+    @apply flex items-center gap-3 rounded-lg border border-stone-200 bg-white px-3 py-2 dark:border-stone-700 dark:bg-stone-800;
+  }
+  .point-field[data-empty] {
+    @apply border-dashed bg-transparent dark:bg-transparent;
+  }
+  .point-dot {
+    @apply size-3 shrink-0 rounded-full ring-2 ring-white dark:ring-stone-900;
+    background: var(--marker-color);
+  }
+  .point-label {
+    @apply text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
+  }
+  .point-value {
+    @apply truncate text-sm font-semibold;
+  }
+  .point-field[data-empty] .point-value {
+    @apply font-normal text-stone-400;
+  }
+  .point-coords {
+    @apply text-xs tabular-nums text-stone-500 dark:text-stone-400;
+  }
+  .point-coords:empty {
+    @apply hidden;
+  }
+  .swap-btn {
+    @apply absolute top-1/2 right-11 grid size-7 -translate-y-1/2 place-items-center rounded-full border border-stone-300 bg-white text-stone-600 shadow-sm transition
+      hover:bg-stone-100
+      dark:border-stone-600 dark:bg-stone-800 dark:text-stone-300;
+  }
+
+  .search-results {
+    @apply absolute inset-x-4 top-full z-50 mt-1 overflow-hidden rounded-lg border border-stone-200 bg-white py-1 shadow-lg dark:border-stone-700 dark:bg-stone-800;
+  }
+  .search-option {
+    @apply cursor-pointer px-3 py-2 text-sm hover:bg-stone-100 dark:hover:bg-stone-700;
+  }
+  .search-option[aria-selected='true'] {
+    @apply bg-stone-100 dark:bg-stone-700;
+  }
+
+  /* --- Carte ----------------------------------------------------------- */
+  .progress {
+    @apply absolute inset-x-0 top-0 z-20 h-1 overflow-hidden bg-blue-600/20;
+  }
+  .progress::after {
+    content: '';
+    @apply absolute inset-y-0 w-1/3 bg-blue-600;
+    animation: progress 1.1s ease-in-out infinite;
+  }
+  .legend {
+    @apply absolute bottom-10 left-3 z-10 rounded-lg bg-white/95 px-3 py-2 text-xs shadow-md backdrop-blur dark:bg-stone-900/95;
+  }
+  .legend-swatch {
+    @apply inline-block size-3 rounded-sm ring-1 ring-black/10;
+  }
+  /* --- Analyses -------------------------------------------------------- */
+  .card {
+    @apply space-y-3 rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-950;
+  }
+  .stat-label {
+    @apply text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
+  }
+  .stat-value {
+    @apply text-sm font-semibold tabular-nums;
+  }
+  .chart-axis {
+    @apply text-[10px] text-stone-500 dark:text-stone-400;
+  }
+  .chart-axis .domain,
+  .chart-axis line {
+    @apply stroke-stone-300 dark:stroke-stone-700;
+  }
+  .chart-grid line {
+    stroke-dasharray: 2 3;
+  }
+  .chart-rule {
+    @apply stroke-stone-400;
+  }
+  .chart-label {
+    @apply fill-stone-800 text-[10px] font-semibold dark:fill-stone-100;
+    paint-order: stroke;
+    stroke: var(--color-white);
+    stroke-width: 3px;
+  }
+  .dark .chart-label {
+    stroke: var(--color-stone-950);
+  }
+  .data-table {
+    @apply w-full text-sm tabular-nums;
+  }
+  .data-table th {
+    @apply pb-1 text-left text-[11px] font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
+  }
+  .data-table td {
+    @apply border-t border-stone-100 py-1 dark:border-stone-800;
+  }
+  .data-table th:not(:first-child),
+  .data-table td:not(:first-child) {
+    @apply text-right;
+  }
+
+  /* --- Toasts et dialogues ----------------------------------------------- */
+  .toasts {
+    @apply pointer-events-none fixed inset-x-0 top-3 z-50 flex flex-col items-center gap-2 px-4;
+  }
+  .toast {
+    @apply pointer-events-auto flex w-full max-w-md items-start gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm shadow-lg transition duration-200 dark:border-stone-700 dark:bg-stone-800;
+  }
+  .dialog {
+    @apply m-auto w-[min(36rem,calc(100vw-2rem))] rounded-2xl bg-white p-6 text-stone-800 shadow-2xl dark:bg-stone-900 dark:text-stone-100;
+  }
+  .dialog::backdrop {
+    @apply bg-stone-950/50 backdrop-blur-sm;
+  }
+  .dialog[open] {
+    animation: dialog-in 0.18s ease-out;
+  }
+}
+
+/* Surcharges de maplibre-gl.css : hors @layer, sinon ses règles (non « layered ») l'emportent */
+.maplibregl-ctrl-group button {
+  color: var(--color-stone-700);
+}
+.map-marker {
+  @apply size-4 rounded-full border-2 border-white shadow-md;
+  background: var(--marker-color);
+}
+.ay-character img {
+  @apply block size-12;
+}
+
+.layer-control {
+  @apply relative;
+}
+.layer-panel {
+  @apply absolute top-0 right-full mr-2 w-64 space-y-3 rounded-lg bg-white p-3 text-left text-sm text-stone-800 shadow-lg dark:bg-stone-900 dark:text-stone-100;
+}
+.layer-panel legend {
+  @apply mb-1 text-xs font-semibold uppercase tracking-wide text-stone-500 dark:text-stone-400;
+}
+.layer-option {
+  @apply flex items-center gap-2 rounded px-1 py-0.5 hover:bg-stone-100 dark:hover:bg-stone-800;
+}
+.maplibregl-ctrl-group button.terrain-toggle {
+  @apply text-xs font-bold text-stone-700;
+}
+.maplibregl-ctrl-group button.terrain-toggle[aria-pressed='true'] {
+  @apply bg-stone-800 text-white;
+}
+
+/* --- Popups ---------------------------------------------------------- */
+.cn-popup .maplibregl-popup-content {
+  @apply rounded-xl px-4 py-3 font-sans text-sm text-stone-800 shadow-lg dark:bg-stone-900 dark:text-stone-100;
+}
+.dark .cn-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
+.dark .cn-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
+.dark .cn-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
+  border-top-color: var(--color-stone-900);
+}
+.dark .cn-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
+.dark .cn-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
+.dark .cn-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
+  border-bottom-color: var(--color-stone-900);
+}
+.dark .cn-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
+  border-right-color: var(--color-stone-900);
+}
+.dark .cn-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
+  border-left-color: var(--color-stone-900);
+}
+.cn-popup .maplibregl-popup-close-button {
+  @apply right-1 top-1 size-6 rounded text-lg text-stone-500 hover:bg-stone-100 dark:hover:bg-stone-800;
+}
+.popup-action {
+  @apply rounded-lg px-2 py-1.5 text-sm font-semibold text-white shadow-sm transition hover:brightness-110;
+  background: var(--action-color);
+}
+.ay-popup {
+  @apply space-y-2 text-[13px] leading-snug;
+}
+.ay-popup img {
+  @apply mx-auto max-h-48 w-auto rounded;
+}
+.ay-popup a {
+  @apply text-blue-700 hover:underline dark:text-blue-400;
+}
+
+@keyframes progress {
+  from {
+    left: -33%;
+  }
+  to {
+    left: 100%;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
