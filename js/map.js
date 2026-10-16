@@ -110,7 +110,7 @@ let carteCassiniEHESSGhdb = L.tileLayer.wms('https://geohistoricaldata.org/geose
   maxZoom: 21,
   format: 'image/png',
   transparent: true
-}).addTo(map);
+});
 
 let tachesUrbaines = L.vectorGrid
   .protobuf('https://api.ptm.huma-num.fr/martin/taches_urbaines/{z}/{x}/{y}', {
@@ -208,7 +208,7 @@ let CassiniBNFIGN = L.tileLayer(
       maxZoom: 21,
       tileSize: 256
   }
-)
+).addTo(map);
 
 let baseLayers = {
     "OSM" : osm,
@@ -262,10 +262,15 @@ map.on('baselayerchange', function(event) {
 //unpkg broked
 L.Control.geocoder().addTo(map);
 
-var loadingControl = L.Control.loading({
-  separate: true
-});
-map.addControl(loadingControl);
+// Check if loading control is available before using it
+if (L.Control.loading) {
+  var loadingControl = L.Control.loading({
+    separate: true
+  });
+  map.addControl(loadingControl);
+} else {
+  console.warn('Leaflet loading control plugin not loaded');
+}
 
 map.on('click', async function(e) {
   
@@ -288,7 +293,7 @@ map.on('click', async function(e) {
   let tacheUrbaineProche = data[0]['nom'];
 
   //bug when toponym contain ticks like Pont l'abbé
-  let tacheUrbaineProcheEscaped = tacheUrbaineProche.replace(/'/g, "\\'");
+  let tacheUrbaineProcheEscaped = tacheUrbaineProche ? tacheUrbaineProche.replace(/'/g, "\\'") : 'Lieu inconnu';
 
   // Main pop up on map 
   let popupContent = `

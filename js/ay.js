@@ -1,3 +1,16 @@
+/**
+ * Module de gestion du voyage d'Arthur Young
+ * 
+ * CONFIGURATION TEMPORAIRE :
+ * - Le personnage est actuellement figé au 20/07 (voir variable FREEZE_DATE)
+ * - Pour réactiver le mode temps réel, mettre FREEZE_DATE = null
+ * - Le parcours antérieur au 20/07 reste affiché intégralement
+ */
+
+// Configuration pour figer le personnage à une date spécifique
+// Mettre à null pour désactiver et utiliser la date actuelle
+const FREEZE_DATE = '07-20'; // Format MM-DD pour le 20/07 - mettre à null pour désactiver
+
 // Création de la couche pour le personnage
 const personnageLayer = L.layerGroup();
 personnageLayer.addTo(map); // ou ne pas l'ajouter tout de suite pour qu'elle soit désactivée par défaut
@@ -54,9 +67,9 @@ function genererContenuPopupArthur(dataRow) {
 
 // Contrôle de couches
 const overlayMaps = {
-  "Voyage d'Arthur Jung": personnageLayer
+  "Voyage d'Arthur Young": personnageLayer
 };
-layerControl.addOverlay(personnageLayer, "Voyage d'Arthur Jung - 1787");
+layerControl.addOverlay(personnageLayer, "Voyage d'Arthur Young - 1787");
 
 personnageMarker.bindPopup(
     "<div class='arthur-young-popup'>" +
@@ -132,9 +145,10 @@ function chargerTrajetArthur(csvUrl) {
             const data = results.data;
             // console.log(data);
 
-            const today = new Date();
-            const todayString = today.toISOString().split('T')[0].slice(5); // Format MM-DD
-            const currentHour = today.getHours();
+            // Utilisation de la date figée ou de la date actuelle selon la configuration
+            const today = FREEZE_DATE ? new Date(`2025-${FREEZE_DATE}`) : new Date();
+            const todayString = FREEZE_DATE || today.toISOString().split('T')[0].slice(5); // Format MM-DD
+            const currentHour = FREEZE_DATE ? 20 : today.getHours(); // Fin de journée si date figée
 
             // Filtrer et trier les lignes du jour par 'ordre'
             const todayRows = data
@@ -195,14 +209,17 @@ function chargerTrajetArthur(csvUrl) {
                     row.date && row.date.trim().slice(5) === todayString
                 );
                 
+                // Date limite pour filtrer les segments (date figée ou date actuelle)
+                const limitDate = FREEZE_DATE ? new Date('2025-' + FREEZE_DATE) : new Date('2025-' + todayString);
+                
                 for (const point of sortedData) {
                     if (!point.date) continue;
                     
                     const pointDate = point.date.trim();
                     const datePart = pointDate.slice(5);
                     
-                    // Check if this date is after today's date
-                    if (new Date('2025-' + datePart) > new Date('2025-' + todayString)) {
+                    // Check if this date is after the limit date (frozen or current)
+                    if (new Date('2025-' + datePart) > limitDate) {
                         break; // Stop processing future dates
                     }
                     
@@ -308,4 +325,4 @@ function chargerTrajetArthur(csvUrl) {
 // }
 
 // Lancement
-chargerTrajetArthur('data/arthur_young_trajet_v3.csv');
+chargerTrajetArthur('data/arthur_young_trajet_v5.csv');
